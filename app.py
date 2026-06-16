@@ -15,7 +15,7 @@ Run in production (Render uses this via render.yaml):
 """
 
 import os
-from flask import Flask, render_template, jsonify
+from flask import Flask, render_template, jsonify, abort
 
 app = Flask(__name__)
 
@@ -32,6 +32,26 @@ def home():
 def healthz():
     """Lightweight health check for Render."""
     return jsonify(status="ok")
+
+
+# Interior content pages (rebuilt natively from the league's Google Docs).
+# slug -> page title. Each has a matching template in templates/pages/<slug>.html
+PAGES = {
+    "bylaws":          "JSSA Bylaws",
+    "playing-rules":   "Playing Rules",
+    "code-of-conduct": "Code of Conduct",
+    "hall-of-fame":    "Hall of Fame",
+    "pickup-games":    "Pickup Games Explained",
+    "in-memoriam":     "In Memoriam",
+}
+
+
+@app.route("/<slug>")
+def page(slug):
+    title = PAGES.get(slug)
+    if title is None:
+        abort(404)
+    return render_template(f"pages/{slug}.html", page_title=title)
 
 
 if __name__ == "__main__":
