@@ -1,0 +1,52 @@
+{% extends "page_base.html" %}
+{% block eyebrow %}The League{% endblock %}
+{% block sub %}<p class="sub">Our members by division. Pickup teams are drawn from these rosters each game day.</p>{% endblock %}
+{% block body %}
+<style>
+  .rosters{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin-top:6px}
+  @media(max-width:860px){.rosters{grid-template-columns:1fr;max-width:520px;margin-left:auto;margin-right:auto}}
+  .divcard{border:1px solid var(--line);border-radius:16px;overflow:hidden;background:#fff;display:flex;flex-direction:column}
+  .divcard .head{padding:16px 20px;display:flex;align-items:center;justify-content:space-between;color:#fff}
+  .divcard .head h2{margin:0;font-size:1.25rem;color:#fff;letter-spacing:-.01em}
+  .divcard .head .count{font-family:var(--display);font-weight:800;font-size:.95rem;background:rgba(255,255,255,.22);padding:3px 11px;border-radius:999px}
+  .divcard.red .head{background:var(--red)}
+  .divcard.blue .head{background:var(--blue)}
+  .divcard.white .head{background:#54607a}
+  .roster{list-style:none;margin:0;padding:6px 0}
+  .roster li{display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding:9px 20px;border-top:1px solid var(--line)}
+  .roster li:first-child{border-top:0}
+  .roster .pn{font-family:var(--display);font-weight:600;color:var(--navy);font-size:1rem}
+  .roster .pp{font-size:.82rem;color:var(--muted);white-space:nowrap;font-variant-numeric:tabular-nums}
+  .ros-empty{padding:18px 20px;color:var(--muted)}
+  .ros-note{color:var(--muted);font-size:.92rem;margin:22px 0 0;text-align:center}
+  .ros-legend{display:flex;gap:18px;justify-content:center;flex-wrap:wrap;margin:0 0 22px;color:var(--muted);font-size:.9rem}
+  .ros-legend b{color:var(--navy)}
+</style>
+
+{% set divs = [('RED','red','Red Division'), ('WHITE','white','White Division'), ('BLUE','blue','Blue Division')] %}
+{% set total = (rosters.RED|length) + (rosters.WHITE|length) + (rosters.BLUE|length) %}
+
+{% if total %}
+<p class="ros-legend"><span><b>{{ total }}</b> members</span><span><b>{{ rosters.RED|length }}</b> Red</span><span><b>{{ rosters.WHITE|length }}</b> White</span><span><b>{{ rosters.BLUE|length }}</b> Blue</span></p>
+<div class="rosters">
+  {% for key, cls, label in divs %}
+  <div class="divcard {{ cls }}">
+    <div class="head"><h2>{{ label }}</h2><span class="count">{{ rosters[key]|length }}</span></div>
+    {% if rosters[key] %}
+    <ul class="roster">
+      {% for p in rosters[key] %}
+      <li><span class="pn">{{ p.name }}</span>{% if p.pos %}<span class="pp">{{ p.pos }}</span>{% endif %}</li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <div class="ros-empty">No players listed yet.</div>
+    {% endif %}
+  </div>
+  {% endfor %}
+</div>
+<p class="ros-note">Positions: P&nbsp;pitcher · 1B/2B/3B&nbsp;corners &amp; middle · SS&nbsp;shortstop · MF&nbsp;mid&nbsp;field · IF&nbsp;infield · OF&nbsp;outfield.</p>
+{% else %}
+<p class="ros-empty">The roster is loading from the league sheet. If this stays empty, the sheet may not be shared with the site yet — check back shortly.</p>
+{% endif %}
+{% endblock %}
+{% block extra_btns %}{% endblock %}
