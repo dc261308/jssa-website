@@ -64,9 +64,13 @@ def home():
         board = sheets.board_members()
     except Exception:
         board = []
+    try:
+        sponsor_list = sheets.sponsors()
+    except Exception:
+        sponsor_list = []
     return render_template("index.html", notice=notice,
                            teams_posted=teams_posted, blackboard=blackboard,
-                           photos=photos, board=board)
+                           photos=photos, board=board, sponsors=sponsor_list)
 
 
 @app.route("/teams")
@@ -491,6 +495,73 @@ def admin_board_delete(mid):
     except Exception:
         pass
     return redirect(url_for("admin_board"))
+
+
+
+# ----------------------------------------------------------------------------
+# Sponsors admin
+# ----------------------------------------------------------------------------
+@app.route("/admin/sponsors")
+@login_required
+def admin_sponsors():
+    configured = sheets.is_configured()
+    items, error = [], None
+    if configured:
+        try:
+            items = sheets.list_sponsors()
+        except Exception as e:
+            error = str(e)
+    editing = None
+    edit_id = request.args.get("edit")
+    if edit_id:
+        for s in items:
+            if str(s.get("id")) == str(edit_id):
+                editing = s
+                break
+    return render_template("admin/manage-sponsors.html",
+                           configured=configured, items=items,
+                           error=error, editing=editing)
+
+
+@app.route("/admin/sponsors/add", methods=["POST"])
+@login_required
+def admin_sponsor_add():
+    try:
+        sheets.add_sponsor(request.form)
+    except Exception:
+        pass
+    return redirect(url_for("admin_sponsors"))
+
+
+@app.route("/admin/sponsors/<sid>/update", methods=["POST"])
+@login_required
+def admin_sponsor_update(sid):
+    try:
+        sheets.update_sponsor(sid, request.form)
+    except Exception:
+        pass
+    return redirect(url_for("admin_sponsors"))
+
+
+@app.route("/admin/sponsors/<sid>/toggle", methods=["POST"])
+@login_required
+def admin_sponsor_toggle(sid):
+    active = request.form.get("active") == "1"
+    try:
+        sheets.set_sponsor_active(sid, active)
+    except Exception:
+        pass
+    return redirect(url_for("admin_sponsors"))
+
+
+@app.route("/admin/sponsors/<sid>/delete", methods=["POST"])
+@login_required
+def admin_sponsor_delete(sid):
+    try:
+        sheets.delete_sponsor(sid)
+    except Exception:
+        pass
+    return redirect(url_for("admin_sponsors"))
 
 
 if __name__ == "__main__":
