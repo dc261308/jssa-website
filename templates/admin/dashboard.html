@@ -1,0 +1,101 @@
+{% extends "page_base.html" %}
+{% block eyebrow %}Admin{% endblock %}
+{% block sub %}<p class="sub">Post a game-day weather update or an announcement. Anything you turn on shows in the banner at the top of the website.</p>{% endblock %}
+{% block body %}
+<style>
+  .adm label{display:block;font-family:var(--display);font-weight:600;color:var(--navy);margin:0 0 7px}
+  .adm textarea,.adm input[type=text]{width:100%;font-family:var(--body);font-size:1.05rem;padding:12px 14px;border:1px solid var(--line);border-radius:10px}
+  .adm textarea{min-height:84px;resize:vertical}
+  .adm .row{margin-bottom:18px}
+  .typepick{display:flex;gap:10px;flex-wrap:wrap}
+  .typepick label{display:flex;align-items:center;gap:9px;border:1px solid var(--line);border-radius:10px;padding:12px 16px;cursor:pointer;font-weight:600;flex:1;min-width:200px}
+  .typepick input{accent-color:var(--blue);width:18px;height:18px}
+  .hint{color:var(--muted);font-size:.9rem;margin-top:6px}
+  .note{background:#fff8e6;border:1px solid #f3e2b3;color:#7a5b12;border-radius:12px;padding:18px 20px}
+  .note code{background:#fff;border:1px solid #eadfbf;border-radius:5px;padding:1px 6px;font-size:.92em}
+  table.notices{width:100%;border-collapse:collapse;margin-top:8px}
+  table.notices th{text-align:left;font-family:var(--display);font-size:.78rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);padding:8px 10px;border-bottom:2px solid var(--line)}
+  table.notices td{padding:12px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+  .badge{display:inline-block;font-family:var(--display);font-weight:700;font-size:.7rem;letter-spacing:.05em;text-transform:uppercase;padding:4px 9px;border-radius:999px}
+  .badge.weather{background:var(--red-tint);color:#b3151b}
+  .badge.announcement{background:var(--blue-tint);color:var(--blue)}
+  .status-on{color:#1a7f4b;font-weight:700}
+  .status-off{color:var(--muted);font-weight:600}
+  .mini{display:inline-flex;align-items:center;gap:6px;font-family:var(--display);font-weight:600;font-size:.86rem;padding:7px 13px;border-radius:8px;border:1px solid var(--line);background:#fff;cursor:pointer}
+  .mini.on{background:#e8f6ee;border-color:#bfe3cd;color:#1a7f4b}
+  .mini.off{background:#f4f5f8;color:var(--navy)}
+  .mini.del{color:#b3151b;border-color:#f0c9cb}
+  .inline{display:inline}
+  .adminbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+  .adminbar a{font-weight:600}
+</style>
+
+<div class="adminbar">
+  <span class="meta-tag">Signed in</span>
+  <a href="{{ url_for('admin_logout') }}">Sign out</a>
+</div>
+
+{% if not configured %}
+  <div class="note">
+    <p style="margin-bottom:8px"><strong>Almost there — the content sheet isn't connected yet.</strong></p>
+    <p>Once the <code>GOOGLE_SERVICE_ACCOUNT_JSON</code> and <code>SHEET_ID</code> settings are in place, this page will let you post updates that appear on the site. Until then, the public site runs normally with no banner.</p>
+  </div>
+{% else %}
+
+  <form class="adm" method="post" action="{{ url_for('admin_add') }}">
+    <div class="row">
+      <label>What kind of update?</label>
+      <div class="typepick">
+        <label><input type="radio" name="type" value="weather" checked> 🌧️ Game-day / weather</label>
+        <label><input type="radio" name="type" value="announcement"> 📣 Announcement</label>
+      </div>
+    </div>
+    <div class="row">
+      <label for="message">Message</label>
+      <textarea id="message" name="message" placeholder="No games today — fields are wet from overnight rain. Check back tomorrow." required></textarea>
+      <div class="hint">Keep it short — this shows in the banner across the top of the site.</div>
+    </div>
+    <div class="row">
+      <label for="created_by">Your name</label>
+      <input type="text" id="created_by" name="created_by" placeholder="e.g. Tom">
+    </div>
+    <button class="btn btn-navy" type="submit">Post update</button>
+  </form>
+
+  <h2 style="margin-top:40px">Posted updates</h2>
+  {% if error %}
+    <div class="note">Couldn't load updates: {{ error }}</div>
+  {% elif notices %}
+    <table class="notices">
+      <thead><tr><th>Type</th><th>Message</th><th>By</th><th>Status</th><th></th></tr></thead>
+      <tbody>
+        {% for n in notices %}
+        <tr>
+          <td><span class="badge {{ n.type }}">{{ n.type }}</span></td>
+          <td>{{ n.message }}</td>
+          <td>{{ n.created_by }}</td>
+          <td>
+            {% set is_on = (n.active|string|upper) in ['TRUE','1','YES'] %}
+            {% if is_on %}<span class="status-on">● Live</span>{% else %}<span class="status-off">○ Off</span>{% endif %}
+          </td>
+          <td style="white-space:nowrap">
+            <form class="inline" method="post" action="{{ url_for('admin_toggle', nid=n.id) }}">
+              <input type="hidden" name="active" value="{{ 0 if is_on else 1 }}">
+              <button class="mini {{ 'off' if is_on else 'on' }}" type="submit">{{ 'Turn off' if is_on else 'Turn on' }}</button>
+            </form>
+            <form class="inline" method="post" action="{{ url_for('admin_delete', nid=n.id) }}" onsubmit="return confirm('Delete this update?');">
+              <button class="mini del" type="submit">Delete</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    <p class="hint" style="margin-top:14px">Tip: when a weather update is live, it takes priority in the banner. Turn it off once games are back to normal.</p>
+  {% else %}
+    <p style="color:var(--muted)">No updates posted yet. Use the form above to post your first one.</p>
+  {% endif %}
+
+{% endif %}
+{% endblock %}
+{% block extra_btns %}{% endblock %}

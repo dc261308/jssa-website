@@ -1,0 +1,23 @@
+{% extends "page_base.html" %}
+{% block eyebrow %}Admin{% endblock %}
+{% block body %}
+<style>
+  .login-form{max-width:380px}
+  .login-form label{display:block;font-family:var(--display);font-weight:600;color:var(--navy);margin-bottom:8px}
+  .login-form input{width:100%;font-family:var(--body);font-size:1.05rem;padding:13px 15px;border:1px solid var(--line);border-radius:10px;margin-bottom:16px}
+  .login-form input:focus{outline:3px solid var(--blue);outline-offset:1px}
+  .err{background:var(--red-tint);color:#b3151b;border-radius:10px;padding:11px 15px;margin-bottom:16px;font-weight:500}
+  .note{background:#fff8e6;border:1px solid #f3e2b3;color:#7a5b12;border-radius:10px;padding:14px 16px}
+</style>
+{% if not configured %}
+  <div class="note">The admin area isn't fully set up yet. Once the <strong>ADMIN_PASSWORD</strong> is configured in the site's settings, you'll be able to sign in here.</div>
+{% else %}
+  {% if error %}<div class="err">{{ error }}</div>{% endif %}
+  <form class="login-form" method="post" action="{{ url_for('admin_login', next=request.args.get('next','')) }}">
+    <label for="password">Admin password</label>
+    <input type="password" id="password" name="password" autocomplete="current-password" autofocus>
+    <button class="btn btn-navy" type="submit">Sign in</button>
+  </form>
+{% endif %}
+{% endblock %}
+{% block extra_btns %}{% endblock %}

@@ -10,3 +10,11 @@ services:
     envVars:
       - key: PYTHON_VERSION
         value: "3.12.4"
+      - key: SECRET_KEY
+        generateValue: true        # Render generates a secure random value
+      - key: ADMIN_PASSWORD
+        sync: false                # Render will prompt you to enter this
+      - key: GOOGLE_SERVICE_ACCOUNT_JSON
+        sync: false                # paste the full service-account key JSON
+      - key: SHEET_ID
+        sync: false                # id of the "JSSA Website Content" sheet

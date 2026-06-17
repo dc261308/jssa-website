@@ -73,6 +73,9 @@
   .banner p{font-weight:500;color:var(--navy);font-size:1rem}
   .banner a{font-family:var(--display);font-weight:600;color:var(--blue);white-space:nowrap}
   .banner .x{margin-left:auto;background:none;border:none;color:var(--muted);font-size:1.4rem;cursor:pointer;line-height:1;padding:4px 6px}
+  .banner-alert{background:var(--red-tint);border-bottom-color:#f3c0c2}
+  .banner-alert p{color:#7a1418}
+  .banner-alert .pip{background:var(--red)}
 
   /* Hero — cinematic dark with lighthouse-beam signature */
   .hero{position:relative;overflow:hidden;color:#fff;background:linear-gradient(140deg,#0d1a33 0%,#16233f 50%,#1d3157 100%)}
@@ -271,6 +274,15 @@
   </div>
 </header>
 
+{% if notice %}
+<div class="banner {% if notice.type == 'weather' %}banner-alert{% endif %}" id="banner">
+  <div class="wrap">
+    <span class="pip"></span>
+    <p>{% if notice.type == 'weather' %}<strong>Game-day update:</strong> {% endif %}{{ notice.message }}</p>
+    <button class="x" id="bannerX" aria-label="Dismiss">×</button>
+  </div>
+</div>
+{% else %}
 <div class="banner" id="banner">
   <div class="wrap">
     <span class="pip"></span>
@@ -279,6 +291,7 @@
     <button class="x" id="bannerX" aria-label="Dismiss">×</button>
   </div>
 </div>
+{% endif %}
 
 <section class="hero" id="top" style="padding:0">
   <div class="wrap">
