@@ -3,6 +3,7 @@
 {% block sub %}<p class="sub">Post a game-day weather update or an announcement. Anything you turn on shows in the banner at the top of the website.</p>{% endblock %}
 {% block body %}
 <style>
+  html{font-size:112.5%}  /* larger, easier-to-read text site-wide */
   .adm label{display:block;font-family:var(--display);font-weight:600;color:var(--navy);margin:0 0 7px}
   .adm textarea,.adm input[type=text]{width:100%;font-family:var(--body);font-size:1.05rem;padding:12px 14px;border:1px solid var(--line);border-radius:10px}
   .adm textarea{min-height:84px;resize:vertical}
@@ -28,6 +29,8 @@
   .inline{display:inline}
   .adminbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
   .adminbar a{font-weight:600}
+  .form-h{font-size:1.5rem;margin:6px 0 4px}
+  .form-sub{color:var(--muted);margin:0 0 18px;font-size:1.02rem}
   .bb-cta{display:flex;align-items:center;justify-content:center;width:100%;min-height:58px;font-size:1.12rem;margin:4px 0 30px;box-shadow:0 6px 18px rgba(22,35,63,.28)}
 </style>
 
@@ -48,6 +51,8 @@
   </div>
 {% else %}
 
+  <h2 class="form-h">📣 Make an announcement</h2>
+  <p class="form-sub">Post a game-day weather note or a quick announcement. It shows in the banner at the top of the website.</p>
   <form class="adm" method="post" action="{{ url_for('admin_add') }}">
     <div class="row">
       <label>What kind of update?</label>
