@@ -1,0 +1,146 @@
+{% extends "page_base.html" %}
+{% block eyebrow %}Admin{% endblock %}
+{% block sub %}<p class="sub">Post and manage the cards in the <strong>Blackboard</strong> section of the homepage. Changes show on the site within about a minute.</p>{% endblock %}
+{% block body %}
+<style>
+  .adm label{display:block;font-family:var(--display);font-weight:600;color:var(--navy);margin:0 0 7px}
+  .adm textarea,.adm input[type=text]{width:100%;font-family:var(--body);font-size:1.05rem;padding:12px 14px;border:1px solid var(--line);border-radius:10px}
+  .adm textarea{min-height:96px;resize:vertical}
+  .adm .row{margin-bottom:18px}
+  .adm .two{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:560px){.adm .two{grid-template-columns:1fr}}
+  .typepick{display:flex;gap:10px;flex-wrap:wrap}
+  .typepick label{display:flex;align-items:center;gap:9px;border:1px solid var(--line);border-radius:10px;padding:12px 16px;cursor:pointer;font-weight:600;flex:1;min-width:160px}
+  .typepick input{accent-color:var(--blue);width:18px;height:18px}
+  .hint{color:var(--muted);font-size:.9rem;margin-top:6px}
+  .note{background:#fff8e6;border:1px solid #f3e2b3;color:#7a5b12;border-radius:12px;padding:18px 20px}
+  .note code{background:#fff;border:1px solid #eadfbf;border-radius:5px;padding:1px 6px;font-size:.92em}
+  .formcard{background:#fff;border:1px solid var(--line);border-radius:14px;padding:22px 24px;margin-bottom:30px}
+  .formcard h2{margin:0 0 16px}
+  table.posts{width:100%;border-collapse:collapse;margin-top:8px}
+  table.posts th{text-align:left;font-family:var(--display);font-size:.78rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);padding:8px 10px;border-bottom:2px solid var(--line)}
+  table.posts td{padding:12px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+  .post-title{font-family:var(--display);font-weight:700;color:var(--navy)}
+  .post-when{color:var(--muted);font-size:.85rem;margin-top:2px}
+  .status-on{color:#1a7f4b;font-weight:700}
+  .status-off{color:var(--muted);font-weight:600}
+  .mini{display:inline-flex;align-items:center;gap:6px;font-family:var(--display);font-weight:600;font-size:.86rem;padding:7px 13px;border-radius:8px;border:1px solid var(--line);background:#fff;cursor:pointer;text-decoration:none;color:var(--navy)}
+  .mini.on{background:#e8f6ee;border-color:#bfe3cd;color:#1a7f4b}
+  .mini.off{background:#f4f5f8;color:var(--navy)}
+  .mini.edit{background:#eef3ff;border-color:#cfe0ff;color:var(--blue)}
+  .mini.del{color:#b3151b;border-color:#f0c9cb}
+  .inline{display:inline}
+  .adminbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;flex-wrap:wrap;gap:10px}
+  .adminbar a{font-weight:600}
+</style>
+
+<div class="adminbar">
+  <a href="{{ url_for('admin_dashboard') }}">&larr; Banner updates</a>
+  <a href="{{ url_for('admin_logout') }}">Sign out</a>
+</div>
+
+{% if not configured %}
+  <div class="note">
+    <p style="margin-bottom:8px"><strong>Almost there — the content sheet isn't connected yet.</strong></p>
+    <p>Once the <code>GOOGLE_SERVICE_ACCOUNT_JSON</code> and <code>SHEET_ID</code> settings are in place, this page lets you post Blackboard cards. Until then, the homepage shows its built-in cards.</p>
+  </div>
+{% else %}
+
+  <div class="formcard">
+    <h2>{% if editing %}Edit post{% else %}Add a post{% endif %}</h2>
+    <form class="adm" method="post"
+          action="{% if editing %}{{ url_for('admin_bb_update', bid=editing.id) }}{% else %}{{ url_for('admin_bb_add') }}{% endif %}">
+      <div class="row">
+        <label for="title">Headline</label>
+        <input type="text" id="title" name="title" placeholder="Free scoop at Village Scoop Shack"
+               value="{{ editing.title if editing else '' }}" required>
+      </div>
+      <div class="row">
+        <label for="when">Small label above the headline <span style="font-weight:400;color:var(--muted)">(optional)</span></label>
+        <input type="text" id="when" name="when" placeholder="Community Night · Tuesday, July 7"
+               value="{{ editing.when if editing else '' }}">
+      </div>
+      <div class="row">
+        <label for="body">Message</label>
+        <textarea id="body" name="body" placeholder="Write the announcement here." required>{{ editing.body if editing else '' }}</textarea>
+      </div>
+      <div class="row two">
+        <div>
+          <label for="link_url">Button link <span style="font-weight:400;color:var(--muted)">(optional)</span></label>
+          <input type="text" id="link_url" name="link_url" placeholder="https://..."
+                 value="{{ editing.link_url if editing else '' }}">
+        </div>
+        <div>
+          <label for="link_text">Button text</label>
+          <input type="text" id="link_text" name="link_text" placeholder="Visit website"
+                 value="{{ editing.link_text if editing else '' }}">
+        </div>
+      </div>
+      <div class="row">
+        <label for="image">Photo <span style="font-weight:400;color:var(--muted)">(optional — paste a Google Drive share link, or leave blank for a text-only card)</span></label>
+        <input type="text" id="image" name="image" placeholder="https://drive.google.com/file/d/..../view"
+               value="{{ editing.image if editing else '' }}">
+        <div class="hint">In Google Drive: right-click the photo → Share → "Anyone with the link" → Copy link, then paste it here.</div>
+      </div>
+      <div class="row two">
+        <div>
+          <label>Photo side</label>
+          <div class="typepick">
+            {% set side = (editing.side if editing else 'left') %}
+            <label><input type="radio" name="side" value="left" {{ 'checked' if side != 'right' else '' }}> Left</label>
+            <label><input type="radio" name="side" value="right" {{ 'checked' if side == 'right' else '' }}> Right</label>
+          </div>
+        </div>
+        <div>
+          <label for="sign">Sign-off <span style="font-weight:400;color:var(--muted)">(optional)</span></label>
+          <input type="text" id="sign" name="sign" placeholder="— John & Toni Cariero"
+                 value="{{ editing.sign if editing else '' }}">
+        </div>
+      </div>
+      {% if editing %}<input type="hidden" name="order" value="{{ editing.order }}">{% endif %}
+      <button class="btn btn-navy" type="submit">{% if editing %}Save changes{% else %}Add post{% endif %}</button>
+      {% if editing %}<a class="mini" style="margin-left:10px" href="{{ url_for('admin_blackboard') }}">Cancel</a>{% endif %}
+    </form>
+  </div>
+
+  <h2>Current posts</h2>
+  {% if error %}
+    <div class="note">Couldn't load posts: {{ error }}</div>
+  {% elif posts %}
+    <table class="posts">
+      <thead><tr><th>Order</th><th>Post</th><th>Photo</th><th>Status</th><th></th></tr></thead>
+      <tbody>
+        {% for p in posts %}
+        <tr>
+          <td>{{ p.order }}</td>
+          <td>
+            <div class="post-title">{{ p.title }}</div>
+            {% if p.when %}<div class="post-when">{{ p.when }}</div>{% endif %}
+          </td>
+          <td>{{ 'Yes (' ~ p.side ~ ')' if p.image else '—' }}</td>
+          <td>
+            {% set is_on = (p.active|string|upper) in ['TRUE','1','YES'] %}
+            {% if is_on %}<span class="status-on">● Live</span>{% else %}<span class="status-off">○ Off</span>{% endif %}
+          </td>
+          <td style="white-space:nowrap">
+            <a class="mini edit" href="{{ url_for('admin_blackboard') }}?edit={{ p.id }}">Edit</a>
+            <form class="inline" method="post" action="{{ url_for('admin_bb_toggle', bid=p.id) }}">
+              <input type="hidden" name="active" value="{{ 0 if is_on else 1 }}">
+              <button class="mini {{ 'off' if is_on else 'on' }}" type="submit">{{ 'Turn off' if is_on else 'Turn on' }}</button>
+            </form>
+            <form class="inline" method="post" action="{{ url_for('admin_bb_delete', bid=p.id) }}" onsubmit="return confirm('Delete this post?');">
+              <button class="mini del" type="submit">Delete</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    <p class="hint" style="margin-top:14px">Posts show top-to-bottom by the <strong>Order</strong> number (lowest first). The first one is shown a little larger as the featured card.</p>
+  {% else %}
+    <p style="color:var(--muted)">No posts yet. Until you add one, the homepage shows its built-in cards. Use the form above to post your first.</p>
+  {% endif %}
+
+{% endif %}
+{% endblock %}
+{% block extra_btns %}{% endblock %}
