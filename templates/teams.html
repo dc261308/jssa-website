@@ -79,8 +79,11 @@
   .empty p{color:var(--muted)}
   .backrow{margin:14px 0 0}
   .btn{display:inline-flex;align-items:center;gap:9px;min-height:48px;padding:0 22px;font-family:var(--display);
-    font-weight:600;font-size:1rem;border-radius:12px;background:var(--navy);color:#fff;transition:background .15s}
+    font-weight:600;font-size:1rem;border-radius:12px;background:var(--navy);color:#fff;transition:background .15s,transform .12s}
   .btn:hover{background:var(--navy-2)}
+  .btn-predict{background:var(--red)}
+  .btn-predict:hover{background:#b91e22;transform:translateY(-2px)}
+  .t-hero .btn-predict{margin-top:22px}
 
   footer{background:var(--navy);color:#cdd6e8;margin-top:48px}
   footer .wrap{padding:38px 24px;text-align:center}
@@ -116,6 +119,7 @@
         {% if teams.total_players %}<span class="pill">{{ teams.total_players }} players</span>{% endif %}
         {% if teams.info %}<span class="pill">{{ teams.info }}</span>{% endif %}
       </div>
+      <a class="btn btn-predict" href="https://script.google.com/macros/s/AKfycbwqXbN6B6WNa7Dye3NJcUWzmNrMETCZWjW2F8JrjmhKb7F3idebOxiBeRm1Fpzpx1ij/exec?view=predictions_test">🏆 Enter the Prediction Game →</a>
     {% else %}
       <p class="when">Rosters are posted here between 3 PM and 4 PM the day before each game.</p>
     {% endif %}
@@ -165,7 +169,8 @@
       {% endfor %}
 
       <div class="note">
-        <b>Think you can pick the winners?</b> Game predictions open each day when the teams are posted — accuracy rankings go on the JSSA Leaderboard.
+        <p style="margin-bottom:14px"><b>Think you can pick the winners?</b> Game predictions open each day when the teams are posted — accuracy rankings go on the JSSA Leaderboard.</p>
+        <a class="btn btn-predict" href="https://script.google.com/macros/s/AKfycbwqXbN6B6WNa7Dye3NJcUWzmNrMETCZWjW2F8JrjmhKb7F3idebOxiBeRm1Fpzpx1ij/exec?view=predictions_test">🏆 Enter the Prediction Game →</a>
       </div>
     {% else %}
       <div class="empty">
