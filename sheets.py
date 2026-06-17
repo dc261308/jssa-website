@@ -555,3 +555,331 @@ def delete_bb_post(post_id):
             ws.delete_rows(i + 2)
             break
     _bb_invalidate()
+
+
+# ----------------------------------------------------------------------------
+# Highlights photos — read the Google Form's upload folder via the service acct
+# ----------------------------------------------------------------------------
+# The form drops uploaded photos into a Drive folder. Share that folder (Viewer)
+# with the service account, then set PHOTOS_FOLDER_ID. We list the newest images
+# and serve their bytes through the app (the files stay private to Drive).
+
+PHOTOS_FOLDER_ID = os.environ.get("PHOTOS_FOLDER_ID", "").strip()
+_DRIVE_SCOPES = ["https://www.googleapis.com/auth/drive.readonly"]
+_PHOTOS_TTL = 120
+_photos_cache = {"ids": None, "ts": 0.0}
+
+
+def photos_configured():
+    return bool(PHOTOS_FOLDER_ID and _SA_JSON)
+
+
+def _drive_creds():
+    from google.oauth2.service_account import Credentials
+    from google.auth.transport.requests import Request
+    info = json.loads(_SA_JSON)
+    creds = Credentials.from_service_account_info(info, scopes=_DRIVE_SCOPES)
+    creds.refresh(Request())
+    return creds
+
+
+def highlight_photo_ids(limit=12):
+    """Drive file ids of the newest images in the upload folder, newest first.
+    Cached; last good value kept on error."""
+    now = time.time()
+    with _lock:
+        if _photos_cache["ids"] is not None and now - _photos_cache["ts"] < _PHOTOS_TTL:
+            return _photos_cache["ids"]
+    try:
+        ids = []
+        if photos_configured():
+            import requests
+            creds = _drive_creds()
+            params = {
+                "q": ("'%s' in parents and mimeType contains 'image/' "
+                      "and trashed = false") % PHOTOS_FOLDER_ID,
+                "orderBy": "createdTime desc",
+                "pageSize": limit,
+                "fields": "files(id)",
+                "supportsAllDrives": "true",
+                "includeItemsFromAllDrives": "true",
+            }
+            r = requests.get("https://www.googleapis.com/drive/v3/files",
+                             params=params,
+                             headers={"Authorization": "Bearer " + creds.token},
+                             timeout=12)
+            if r.status_code == 200:
+                ids = [f["id"] for f in r.json().get("files", [])]
+        with _lock:
+            _photos_cache["ids"] = ids
+            _photos_cache["ts"] = now
+        return ids
+    except Exception:
+        return _photos_cache["ids"] or []
+
+
+def fetch_photo_bytes(file_id):
+    """Return (bytes, content_type) for one image id, or (None, None).
+    Only serves ids that are currently in the highlights set (safety)."""
+    if not photos_configured():
+        return None, None
+    if file_id not in highlight_photo_ids():
+        return None, None
+    try:
+        import requests
+        creds = _drive_creds()
+        r = requests.get("https://www.googleapis.com/drive/v3/files/%s" % file_id,
+                         params={"alt": "media", "supportsAllDrives": "true"},
+                         headers={"Authorization": "Bearer " + creds.token},
+                         timeout=20)
+        if r.status_code != 200:
+            return None, None
+        return r.content, r.headers.get("Content-Type", "image/jpeg")
+    except Exception:
+        return None, None
+
+
+# ----------------------------------------------------------------------------
+# In Memoriam + Hall of Fame — admin-managed entries appended to those pages
+# ----------------------------------------------------------------------------
+# Each lives on its own tab in the same JSSA Website Content sheet, auto-created
+# if missing. The hardcoded entries already on the pages stay as they are; these
+# admin entries render in addition to them. Same graceful-fallback behavior as
+# the Blackboard: if the sheet/API hiccups, the pages still show their built-ins.
+
+MEMORIAM_TAB = "InMemoriam"
+MEM_HEADERS = ["id", "name", "when", "image", "order", "active"]
+HOF_TAB = "HallOfFame"
+HOF_HEADERS = ["id", "year", "name", "body", "image", "order", "active"]
+
+_mem_cache = {"data": None, "ts": 0.0}
+_hof_cache = {"data": None, "ts": 0.0}
+
+
+def _simple_worksheet(tab, headers):
+    import gspread
+    from google.oauth2.service_account import Credentials
+    info = json.loads(_SA_JSON)
+    scopes = ["https://www.googleapis.com/auth/spreadsheets"]
+    creds = Credentials.from_service_account_info(info, scopes=scopes)
+    gc = gspread.authorize(creds)
+    sh = gc.open_by_key(SHEET_ID)
+    try:
+        ws = sh.worksheet(tab)
+    except gspread.WorksheetNotFound:
+        ws = sh.add_worksheet(title=tab, rows=200, cols=len(headers))
+        ws.update([headers], "A1")
+    return ws
+
+
+def _next_order(records):
+    mx = 0
+    for r in records:
+        mx = max(mx, _to_int(r.get("order")))
+    return mx + 1
+
+
+def _paras(body):
+    body = (body or "").replace("\r\n", "\n").replace("\r", "\n").strip()
+    if not body:
+        return []
+    return [p.strip() for p in re.split(r"\n\s*\n", body) if p.strip()]
+
+
+# ---- In Memoriam ----------------------------------------------------------
+def _mem_invalidate():
+    with _lock:
+        _mem_cache["ts"] = 0.0
+
+
+def in_memoriam_entries():
+    """Active admin-added In Memoriam entries, ordered. Public page."""
+    now = time.time()
+    with _lock:
+        if _mem_cache["data"] is not None and now - _mem_cache["ts"] < _CACHE_TTL:
+            return _mem_cache["data"]
+    try:
+        out = []
+        if is_configured():
+            ws = _simple_worksheet(MEMORIAM_TAB, MEM_HEADERS)
+            for r in ws.get_all_records(expected_headers=MEM_HEADERS):
+                if not _is_true(r.get("active")):
+                    continue
+                name = str(r.get("name") or "").strip()
+                if not name:
+                    continue
+                out.append({
+                    "name": name,
+                    "when": str(r.get("when") or "").strip(),
+                    "image": _img_url(str(r.get("image") or "")),
+                    "order": _to_int(r.get("order")),
+                })
+            out.sort(key=lambda e: e["order"])
+        with _lock:
+            _mem_cache["data"] = out
+            _mem_cache["ts"] = now
+        return out
+    except Exception:
+        return _mem_cache["data"] or []
+
+
+def list_mem_entries():
+    if not is_configured():
+        return []
+    ws = _simple_worksheet(MEMORIAM_TAB, MEM_HEADERS)
+    out = [{k: rec.get(k, "") for k in MEM_HEADERS}
+           for rec in ws.get_all_records(expected_headers=MEM_HEADERS)]
+    out.sort(key=lambda r: _to_int(r.get("order")))
+    return out
+
+
+def add_mem_entry(fields):
+    ws = _simple_worksheet(MEMORIAM_TAB, MEM_HEADERS)
+    records = ws.get_all_records(expected_headers=MEM_HEADERS)
+    order = fields.get("order")
+    order = _to_int(order) if str(order or "").strip() else _next_order(records)
+    ws.append_row([
+        uuid.uuid4().hex[:8],
+        (fields.get("name") or "").strip(),
+        (fields.get("when") or "").strip(),
+        (fields.get("image") or "").strip(),
+        order, "TRUE",
+    ], value_input_option="USER_ENTERED")
+    _mem_invalidate()
+
+
+def update_mem_entry(entry_id, fields):
+    ws = _simple_worksheet(MEMORIAM_TAB, MEM_HEADERS)
+    for i, rec in enumerate(ws.get_all_records(expected_headers=MEM_HEADERS)):
+        if str(rec.get("id")) == str(entry_id):
+            vals = {
+                "name": (fields.get("name") or "").strip(),
+                "when": (fields.get("when") or "").strip(),
+                "image": (fields.get("image") or "").strip(),
+            }
+            if str(fields.get("order") or "").strip():
+                vals["order"] = _to_int(fields.get("order"))
+            for k, v in vals.items():
+                ws.update_cell(i + 2, MEM_HEADERS.index(k) + 1, v)
+            break
+    _mem_invalidate()
+
+
+def set_mem_active(entry_id, active):
+    ws = _simple_worksheet(MEMORIAM_TAB, MEM_HEADERS)
+    col = MEM_HEADERS.index("active") + 1
+    for i, rec in enumerate(ws.get_all_records(expected_headers=MEM_HEADERS)):
+        if str(rec.get("id")) == str(entry_id):
+            ws.update_cell(i + 2, col, "TRUE" if active else "FALSE")
+            break
+    _mem_invalidate()
+
+
+def delete_mem_entry(entry_id):
+    ws = _simple_worksheet(MEMORIAM_TAB, MEM_HEADERS)
+    for i, rec in enumerate(ws.get_all_records(expected_headers=MEM_HEADERS)):
+        if str(rec.get("id")) == str(entry_id):
+            ws.delete_rows(i + 2)
+            break
+    _mem_invalidate()
+
+
+# ---- Hall of Fame ---------------------------------------------------------
+def _hof_invalidate():
+    with _lock:
+        _hof_cache["ts"] = 0.0
+
+
+def hof_entries():
+    """Active admin-added Hall of Fame inductees, ordered. Public page."""
+    now = time.time()
+    with _lock:
+        if _hof_cache["data"] is not None and now - _hof_cache["ts"] < _CACHE_TTL:
+            return _hof_cache["data"]
+    try:
+        out = []
+        if is_configured():
+            ws = _simple_worksheet(HOF_TAB, HOF_HEADERS)
+            for r in ws.get_all_records(expected_headers=HOF_HEADERS):
+                if not _is_true(r.get("active")):
+                    continue
+                name = str(r.get("name") or "").strip()
+                if not name:
+                    continue
+                out.append({
+                    "year": str(r.get("year") or "").strip(),
+                    "name": name,
+                    "body_paras": _paras(str(r.get("body") or "")),
+                    "image": _img_url(str(r.get("image") or "")),
+                    "order": _to_int(r.get("order")),
+                })
+            out.sort(key=lambda e: e["order"])
+        with _lock:
+            _hof_cache["data"] = out
+            _hof_cache["ts"] = now
+        return out
+    except Exception:
+        return _hof_cache["data"] or []
+
+
+def list_hof_entries():
+    if not is_configured():
+        return []
+    ws = _simple_worksheet(HOF_TAB, HOF_HEADERS)
+    out = [{k: rec.get(k, "") for k in HOF_HEADERS}
+           for rec in ws.get_all_records(expected_headers=HOF_HEADERS)]
+    out.sort(key=lambda r: _to_int(r.get("order")))
+    return out
+
+
+def add_hof_entry(fields):
+    ws = _simple_worksheet(HOF_TAB, HOF_HEADERS)
+    records = ws.get_all_records(expected_headers=HOF_HEADERS)
+    order = fields.get("order")
+    order = _to_int(order) if str(order or "").strip() else _next_order(records)
+    ws.append_row([
+        uuid.uuid4().hex[:8],
+        (fields.get("year") or "").strip(),
+        (fields.get("name") or "").strip(),
+        (fields.get("body") or "").strip(),
+        (fields.get("image") or "").strip(),
+        order, "TRUE",
+    ], value_input_option="USER_ENTERED")
+    _hof_invalidate()
+
+
+def update_hof_entry(entry_id, fields):
+    ws = _simple_worksheet(HOF_TAB, HOF_HEADERS)
+    for i, rec in enumerate(ws.get_all_records(expected_headers=HOF_HEADERS)):
+        if str(rec.get("id")) == str(entry_id):
+            vals = {
+                "year": (fields.get("year") or "").strip(),
+                "name": (fields.get("name") or "").strip(),
+                "body": (fields.get("body") or "").strip(),
+                "image": (fields.get("image") or "").strip(),
+            }
+            if str(fields.get("order") or "").strip():
+                vals["order"] = _to_int(fields.get("order"))
+            for k, v in vals.items():
+                ws.update_cell(i + 2, HOF_HEADERS.index(k) + 1, v)
+            break
+    _hof_invalidate()
+
+
+def set_hof_active(entry_id, active):
+    ws = _simple_worksheet(HOF_TAB, HOF_HEADERS)
+    col = HOF_HEADERS.index("active") + 1
+    for i, rec in enumerate(ws.get_all_records(expected_headers=HOF_HEADERS)):
+        if str(rec.get("id")) == str(entry_id):
+            ws.update_cell(i + 2, col, "TRUE" if active else "FALSE")
+            break
+    _hof_invalidate()
+
+
+def delete_hof_entry(entry_id):
+    ws = _simple_worksheet(HOF_TAB, HOF_HEADERS)
+    for i, rec in enumerate(ws.get_all_records(expected_headers=HOF_HEADERS)):
+        if str(rec.get("id")) == str(entry_id):
+            ws.delete_rows(i + 2)
+            break
+    _hof_invalidate()
