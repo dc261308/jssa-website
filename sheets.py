@@ -24,6 +24,7 @@ import time
 import uuid
 import datetime
 import threading
+import re
 
 SHEET_ID = os.environ.get("SHEET_ID", "").strip()
 _SA_JSON = os.environ.get("GOOGLE_SERVICE_ACCOUNT_JSON", "").strip()
@@ -353,3 +354,204 @@ def game_day_teams():
     except Exception:
         # On any hiccup, return the last good value (may be None).
         return _teams_cache["data"]
+
+
+# ----------------------------------------------------------------------------
+# Blackboard posts (homepage "Blackboard" section)
+# ----------------------------------------------------------------------------
+# Lives on a "Blackboard" tab in the same JSSA Website Content sheet, auto-created
+# if missing. Each row is one post. Edit the sheet -> the homepage updates; no
+# code change or redeploy. If the tab is empty or the API hiccups, the homepage
+# falls back to its built-in cards, so it never looks broken.
+
+BLACKBOARD_TAB = "Blackboard"
+BB_HEADERS = ["id", "when", "title", "body", "image",
+              "link_url", "link_text", "sign", "side", "active", "order"]
+
+_bb_cache = {"data": None, "ts": 0.0}
+
+_DRIVE_RE = re.compile(r"(?:/d/|[?&]id=)([A-Za-z0-9_-]{25,})")
+
+
+def _to_int(v):
+    try:
+        return int(str(v).strip() or 0)
+    except Exception:
+        return 0
+
+
+def _img_url(s):
+    """Normalize a sheet image value into something an <img> can load.
+    Accepts a Google Drive share link, a bare Drive file id, a /static path,
+    or any full http(s) URL. Returns '' for blank."""
+    s = (s or "").strip()
+    if not s:
+        return ""
+    if s.startswith("/"):
+        return s
+    low = s.lower()
+    if ("drive.google" in low) or ("docs.google" in low):
+        m = _DRIVE_RE.search(s)
+        if m:
+            return "https://lh3.googleusercontent.com/d/%s=w1000" % m.group(1)
+        return s
+    if low.startswith("http"):
+        return s
+    if re.fullmatch(r"[A-Za-z0-9_-]{25,}", s):
+        return "https://lh3.googleusercontent.com/d/%s=w1000" % s
+    return s
+
+
+def _bb_worksheet():
+    import gspread
+    from google.oauth2.service_account import Credentials
+
+    info = json.loads(_SA_JSON)
+    scopes = ["https://www.googleapis.com/auth/spreadsheets"]
+    creds = Credentials.from_service_account_info(info, scopes=scopes)
+    gc = gspread.authorize(creds)
+    sh = gc.open_by_key(SHEET_ID)
+    try:
+        ws = sh.worksheet(BLACKBOARD_TAB)
+    except gspread.WorksheetNotFound:
+        ws = sh.add_worksheet(title=BLACKBOARD_TAB, rows=100, cols=len(BB_HEADERS))
+        ws.update([BB_HEADERS], "A1")
+    return ws
+
+
+def blackboard_posts():
+    """Active Blackboard posts, ordered by the 'order' column (low to high).
+    Cached for _CACHE_TTL seconds; last good value kept on error."""
+    now = time.time()
+    with _lock:
+        if _bb_cache["data"] is not None and now - _bb_cache["ts"] < _CACHE_TTL:
+            return _bb_cache["data"]
+
+    try:
+        posts = []
+        if is_configured():
+            ws = _bb_worksheet()
+            rows = ws.get_all_records(expected_headers=BB_HEADERS)
+            for r in rows:
+                if not _is_true(r.get("active")):
+                    continue
+                title = str(r.get("title") or "").strip()
+                body = str(r.get("body") or "").strip()
+                if not (title or body):
+                    continue
+                posts.append({
+                    "when": str(r.get("when") or "").strip(),
+                    "title": title,
+                    "body": body,
+                    "image": _img_url(str(r.get("image") or "")),
+                    "link_url": str(r.get("link_url") or "").strip(),
+                    "link_text": str(r.get("link_text") or "").strip(),
+                    "sign": str(r.get("sign") or "").strip(),
+                    "side": (str(r.get("side") or "").strip().lower() or "left"),
+                    "order": _to_int(r.get("order")),
+                })
+            posts.sort(key=lambda p: p["order"])
+        with _lock:
+            _bb_cache["data"] = posts
+            _bb_cache["ts"] = now
+        return posts
+    except Exception:
+        return _bb_cache["data"] or []
+
+
+# ----------------------------------------------------------------------------
+# Blackboard admin (manage posts from inside the site's /admin area)
+# ----------------------------------------------------------------------------
+def _bb_invalidate():
+    with _lock:
+        _bb_cache["ts"] = 0.0
+
+
+def list_bb_posts():
+    """All Blackboard posts (active and inactive), ordered. For the admin list."""
+    if not is_configured():
+        return []
+    ws = _bb_worksheet()
+    records = ws.get_all_records(expected_headers=BB_HEADERS)
+    out = [{k: rec.get(k, "") for k in BB_HEADERS} for rec in records]
+    out.sort(key=lambda r: _to_int(r.get("order")))
+    return out
+
+
+def _bb_next_order(records):
+    mx = 0
+    for r in records:
+        mx = max(mx, _to_int(r.get("order")))
+    return mx + 1
+
+
+def _bb_clean_side(v):
+    s = (v or "").strip().lower()
+    return "right" if s == "right" else "left"
+
+
+def add_bb_post(fields):
+    ws = _bb_worksheet()
+    records = ws.get_all_records(expected_headers=BB_HEADERS)
+    order = fields.get("order")
+    order = _to_int(order) if str(order or "").strip() else _bb_next_order(records)
+    row = [
+        uuid.uuid4().hex[:8],
+        (fields.get("when") or "").strip(),
+        (fields.get("title") or "").strip(),
+        (fields.get("body") or "").strip(),
+        (fields.get("image") or "").strip(),
+        (fields.get("link_url") or "").strip(),
+        (fields.get("link_text") or "").strip(),
+        (fields.get("sign") or "").strip(),
+        _bb_clean_side(fields.get("side")),
+        "TRUE",
+        order,
+    ]
+    ws.append_row(row, value_input_option="USER_ENTERED")
+    _bb_invalidate()
+
+
+def update_bb_post(post_id, fields):
+    ws = _bb_worksheet()
+    records = ws.get_all_records(expected_headers=BB_HEADERS)
+    for i, rec in enumerate(records):
+        if str(rec.get("id")) == str(post_id):
+            rownum = i + 2
+            new_vals = {
+                "when": (fields.get("when") or "").strip(),
+                "title": (fields.get("title") or "").strip(),
+                "body": (fields.get("body") or "").strip(),
+                "image": (fields.get("image") or "").strip(),
+                "link_url": (fields.get("link_url") or "").strip(),
+                "link_text": (fields.get("link_text") or "").strip(),
+                "sign": (fields.get("sign") or "").strip(),
+                "side": _bb_clean_side(fields.get("side")),
+            }
+            if str(fields.get("order") or "").strip():
+                new_vals["order"] = _to_int(fields.get("order"))
+            for key, val in new_vals.items():
+                ws.update_cell(rownum, BB_HEADERS.index(key) + 1, val)
+            break
+    _bb_invalidate()
+
+
+def set_bb_active(post_id, active):
+    ws = _bb_worksheet()
+    records = ws.get_all_records(expected_headers=BB_HEADERS)
+    col = BB_HEADERS.index("active") + 1
+    for i, rec in enumerate(records):
+        if str(rec.get("id")) == str(post_id):
+            ws.update_cell(i + 2, col, "TRUE" if active else "FALSE")
+            break
+    _bb_invalidate()
+
+
+def delete_bb_post(post_id):
+    ws = _bb_worksheet()
+    records = ws.get_all_records(expected_headers=BB_HEADERS)
+    for i, rec in enumerate(records):
+        if str(rec.get("id")) == str(post_id):
+            ws.delete_rows(i + 2)
+            break
+    _bb_invalidate()
