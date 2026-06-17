@@ -883,3 +883,164 @@ def delete_hof_entry(entry_id):
             ws.delete_rows(i + 2)
             break
     _hof_invalidate()
+
+
+# ----------------------------------------------------------------------------
+# Board of Directors — admin-managed, seeded with the current board
+# ----------------------------------------------------------------------------
+# On first use the tab is auto-created and filled with the 12 members currently
+# on the homepage, so the site looks identical on day one. The homepage reads
+# this tab; if it's empty or the API hiccups, board_members() returns [] and the
+# homepage falls back to its built-in list. Editing/deleting here updates the site.
+
+BOARD_TAB = "BoardMembers"
+BOARD_HEADERS = ["id", "name", "role", "division", "order", "active"]
+_board_cache = {"data": None, "ts": 0.0}
+
+_BOARD_SEED = [
+    ("Richie Sewell",  "Commissioner",       ""),
+    ("John Cariero",   "Vice Commissioner",  ""),
+    ("Steven Klein",   "Executive Director", ""),
+    ("Mike Igneri",    "Director",           "red"),
+    ("Joe Santos",     "Director",           "red"),
+    ("Rick Tuyn",      "Director",           "red"),
+    ("Jay Stollman",   "Director",           "white"),
+    ("Vic Troiano",    "Director",           "white"),
+    ("Dick Wendling",  "Director",           "white"),
+    ("Ron Bialosky",   "Director",           "blue"),
+    ("Jeff McCrave",   "Director",           "blue"),
+    ("Miriam Ruffolo", "Director",           "blue"),
+]
+
+
+def _board_worksheet():
+    import gspread
+    from google.oauth2.service_account import Credentials
+    info = json.loads(_SA_JSON)
+    scopes = ["https://www.googleapis.com/auth/spreadsheets"]
+    creds = Credentials.from_service_account_info(info, scopes=scopes)
+    gc = gspread.authorize(creds)
+    sh = gc.open_by_key(SHEET_ID)
+    try:
+        ws = sh.worksheet(BOARD_TAB)
+    except gspread.WorksheetNotFound:
+        ws = sh.add_worksheet(title=BOARD_TAB, rows=200, cols=len(BOARD_HEADERS))
+        ws.update([BOARD_HEADERS], "A1")
+        seed = [[uuid.uuid4().hex[:8], name, role, div, i, "TRUE"]
+                for i, (name, role, div) in enumerate(_BOARD_SEED, start=1)]
+        if seed:
+            ws.append_rows(seed, value_input_option="USER_ENTERED")
+    return ws
+
+
+def _initials(name):
+    words = [w for w in re.split(r"\s+", (name or "").strip())
+             if re.search(r"[A-Za-z0-9]", w)]
+    s = "".join((re.sub(r"[^A-Za-z0-9]", "", w)[:1] for w in words[:2]))
+    return (s or (name or "?")[:1]).upper()
+
+
+def _board_div(v):
+    s = (v or "").strip().lower()
+    return s if s in ("red", "white", "blue") else ""
+
+
+def _board_invalidate():
+    with _lock:
+        _board_cache["ts"] = 0.0
+
+
+def board_members():
+    """Active board members, ordered. [] if not set up -> homepage falls back."""
+    now = time.time()
+    with _lock:
+        if _board_cache["data"] is not None and now - _board_cache["ts"] < _CACHE_TTL:
+            return _board_cache["data"]
+    try:
+        out = []
+        if is_configured():
+            ws = _board_worksheet()
+            for r in ws.get_all_records(expected_headers=BOARD_HEADERS):
+                if not _is_true(r.get("active")):
+                    continue
+                name = str(r.get("name") or "").strip()
+                if not name:
+                    continue
+                role = str(r.get("role") or "").strip()
+                div = _board_div(r.get("division"))
+                role_display = role + (" \u00b7 " + div.capitalize() if div else "")
+                out.append({
+                    "name": name,
+                    "role": role_display,
+                    "division": div,
+                    "initials": _initials(name),
+                    "order": _to_int(r.get("order")),
+                })
+            out.sort(key=lambda m: m["order"])
+        with _lock:
+            _board_cache["data"] = out
+            _board_cache["ts"] = now
+        return out
+    except Exception:
+        return _board_cache["data"] or []
+
+
+def list_board_members():
+    if not is_configured():
+        return []
+    ws = _board_worksheet()
+    out = [{k: rec.get(k, "") for k in BOARD_HEADERS}
+           for rec in ws.get_all_records(expected_headers=BOARD_HEADERS)]
+    out.sort(key=lambda r: _to_int(r.get("order")))
+    return out
+
+
+def add_board_member(fields):
+    ws = _board_worksheet()
+    records = ws.get_all_records(expected_headers=BOARD_HEADERS)
+    order = fields.get("order")
+    order = _to_int(order) if str(order or "").strip() else _next_order(records)
+    ws.append_row([
+        uuid.uuid4().hex[:8],
+        (fields.get("name") or "").strip(),
+        (fields.get("role") or "").strip(),
+        _board_div(fields.get("division")),
+        order, "TRUE",
+    ], value_input_option="USER_ENTERED")
+    _board_invalidate()
+
+
+def update_board_member(member_id, fields):
+    ws = _board_worksheet()
+    for i, rec in enumerate(ws.get_all_records(expected_headers=BOARD_HEADERS)):
+        if str(rec.get("id")) == str(member_id):
+            vals = {
+                "name": (fields.get("name") or "").strip(),
+                "role": (fields.get("role") or "").strip(),
+                "division": _board_div(fields.get("division")),
+            }
+            if str(fields.get("order") or "").strip():
+                vals["order"] = _to_int(fields.get("order"))
+            for k, v in vals.items():
+                ws.update_cell(i + 2, BOARD_HEADERS.index(k) + 1, v)
+            break
+    _board_invalidate()
+
+
+def set_board_active(member_id, active):
+    ws = _board_worksheet()
+    col = BOARD_HEADERS.index("active") + 1
+    for i, rec in enumerate(ws.get_all_records(expected_headers=BOARD_HEADERS)):
+        if str(rec.get("id")) == str(member_id):
+            ws.update_cell(i + 2, col, "TRUE" if active else "FALSE")
+            break
+    _board_invalidate()
+
+
+def delete_board_member(member_id):
+    ws = _board_worksheet()
+    for i, rec in enumerate(ws.get_all_records(expected_headers=BOARD_HEADERS)):
+        if str(rec.get("id")) == str(member_id):
+            ws.delete_rows(i + 2)
+            break
+    _board_invalidate()
