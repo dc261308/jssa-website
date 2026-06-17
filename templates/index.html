@@ -17,7 +17,7 @@
     --shadow:0 4px 22px rgba(22,35,63,.06);--radius:16px;
   }
   *{box-sizing:border-box;margin:0;padding:0}
-  html{scroll-behavior:smooth}
+  html{scroll-behavior:smooth;font-size:112.5%}
   body{font-family:var(--body);font-size:1.0625rem;line-height:1.6;color:var(--text);background:var(--bg);-webkit-font-smoothing:antialiased}
   img{max-width:100%;display:block}
   a{color:var(--blue);text-decoration:none}
@@ -69,16 +69,19 @@
   .hero{position:relative;overflow:hidden;color:#fff;background:linear-gradient(140deg,#0d1a33 0%,#16233f 52%,#1d3157 100%)}
   .hero::after{content:"";position:absolute;right:-120px;top:-120px;width:420px;height:420px;border-radius:50%;
     background:radial-gradient(circle,rgba(43,91,208,.35),transparent 70%);pointer-events:none}
-  .hero .wrap{position:relative;z-index:2;padding:42px 24px 40px}
-  .hero .eyebrow{display:inline-flex;align-items:center;gap:9px;font-family:var(--display);font-weight:700;font-size:.8rem;letter-spacing:.12em;text-transform:uppercase;color:#9fc0ff}
+  .hero .wrap{position:relative;z-index:2;padding:54px 24px 52px}
+  .hero .eyebrow{display:inline-flex;align-items:center;gap:9px;font-family:var(--display);font-weight:700;font-size:.86rem;letter-spacing:.12em;text-transform:uppercase;color:#9fc0ff}
   .hero .eyebrow::before{content:"";width:22px;height:2px;background:#9fc0ff;border-radius:2px}
-  .hero h1{font-size:clamp(1.9rem,4vw,2.6rem);font-weight:900;color:#fff;margin:12px 0 0;letter-spacing:-.03em}
-  .hero h1 .welcome{display:block;font-size:.4em;font-weight:700;letter-spacing:.01em;color:#cfe0ff;margin-bottom:3px;text-transform:none}
-  .hero p.lede{font-size:1.18rem;color:#cbd6ee;margin-top:12px;max-width:62ch}
+  .hero .welcome-line{font-family:var(--display);font-weight:700;font-size:clamp(1.15rem,2.4vw,1.55rem);color:#9fc0ff;letter-spacing:.01em;margin:16px 0 4px}
+  .hero h1{font-size:clamp(2.3rem,6vw,3.7rem);font-weight:900;color:#fff;margin:0;letter-spacing:-.03em;line-height:1.03;text-wrap:balance}
+  .hero p.lede{font-size:clamp(1.15rem,2.1vw,1.35rem);color:#cbd6ee;margin-top:18px;max-width:60ch;line-height:1.55}
   .hero p.lede strong{color:#fff;font-weight:700}
-  .hero .deadline{margin-top:16px;color:#9fc0ff;font-size:1rem}
+  .hero .btn{font-size:1.08rem;padding:15px 26px}
+  .hero .divflag{margin-top:24px}
+  .hero .divflag span{font-size:.82rem;padding:7px 18px;letter-spacing:.12em}
+  .hero .deadline{margin-top:18px;color:#9fc0ff;font-size:1.05rem}
   .hero .deadline strong{color:#fff;font-weight:700}
-  .hero .cta-row{display:flex;flex-wrap:wrap;gap:12px;margin-top:26px}
+  .hero .cta-row{display:flex;flex-wrap:wrap;gap:14px;margin-top:30px}
   .divflag{display:flex;gap:6px;margin-top:28px}
   .divflag span{font-family:var(--display);font-weight:800;font-size:.8rem;letter-spacing:.1em;padding:6px 16px;border-radius:8px;color:#fff}
   .divflag .r{background:var(--red)}.divflag .w{background:#fff;color:var(--navy)}.divflag .b{background:var(--blue)}
@@ -323,8 +326,10 @@
 <section class="hero">
   <div class="wrap">
     <span class="eyebrow">Jupiter, Florida · Players 55 &amp; Over</span>
-    <h1><span class="welcome">Welcome to the home of</span>Jupiter Senior Softball</h1>
-    <p class="lede">Pickup games <strong>Monday, Wednesday &amp; Friday</strong> at Jupiter Community Park &mdash; first pitch <strong>10:30 AM</strong>.</p>
+    <p class="welcome-line">Welcome to the home of</p>
+    <h1>Jupiter Senior Softball</h1>
+    <p class="lede">Friendly pickup games every <strong>Monday, Wednesday &amp; Friday</strong> at Jupiter Community Park &mdash; first pitch <strong>10:30 AM</strong>. New players are always welcome.</p>
+    <div class="divflag"><span class="r">RED</span><span class="w">WHITE</span><span class="b">BLUE</span></div>
     <div class="cta-row">
       <a class="btn btn-red" href="https://script.google.com/macros/s/AKfycbzLLz9E-qjJwXbgAkaGjhH0PT_3oa13uzrl9T5dT1omGCL6Ocw1lYELg8xFBM7zuapN7g/exec">Sign up to play &rarr;</a>
       <a class="btn btn-blue" href="/teams">See today's teams &rarr;</a>
