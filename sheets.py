@@ -1136,24 +1136,44 @@ def division_rosters():
 # homepage, so the site looks identical on day one. The homepage reads this tab;
 # if it's empty/the API hiccups, the homepage falls back to its built-in list.
 
+# Legacy compatibility: the original sponsor list referenced /static/logos/*.png
+# files that don't serve in production. Any Sponsors tab seeded before this fix
+# still holds those dead paths, so we transparently map them to the Drive image
+# that actually renders. New seeds already use the Drive id directly.
+_LEGACY_LOGO_FIX = {
+    "/static/logos/american-sr-health.png": "1le3nK1MdPqY8qH0Tgzb1BUjbjMuyTB4E",
+    "/static/logos/panera.png": "1pAOFUafHOkAH6fHIFeJjWTU4PwPMlIAM",
+    "/static/logos/stephen-denny.png": "1Th9uRAjEfW-vhLkDisx1DBCJBvh0Z8Xc",
+    "/static/logos/golf-club.png": "1_e6wYNqDJOGEsqDDudUpvrFIPqK_t5sE",
+    "/static/logos/royal-cafe.png": "166z3zdu8zPfTwJfj-m7enarLRooCTCaY",
+    "/static/logos/team1-sports.png": "17zkWfSVqNtZ2Uvhe-L4IyhT2VYF275Bo",
+    "/static/logos/uncle-micks.png": "1jU_X9_jiqiDKENNJiaY2Z1ucDs09S-tz",
+    "/static/logos/1000-north.png": "1WVIh0rPpM3U1SKXwvHxSRn2jsF8ICsXm",
+    "/static/logos/cindy-sojka.png": "1Gffs-pHQ0Cfxqun3FiaKa_ExsEjmhezC",
+    "/static/logos/mike-parenti.png": "1Ewyhqu9_JMxo6MZOxhnboelNIzKBPzxw",
+    "/static/logos/food-shack.png": "1Wih3oO98Az7QhVmhkrNa8_k1E1FzelwT",
+    "/static/logos/se-rods.png": "1pft9Wt4I3g1rZiIkDGHKZju7rpBGPXFF",
+    "/static/logos/village-scoop-shack.png": "1xza0JCWClLBISuFTRjSjbPTDFC-RY6n8",
+}
+
 SPONSOR_TAB = "Sponsors"
 SPONSOR_HEADERS = ["id", "name", "tagline", "website", "logo", "phone", "order", "active"]
 _sponsor_cache = {"data": None, "ts": 0.0}
 
 _SPONSOR_SEED = [
-    ("American Sr Health Services", "Health, Life & Long Term Insurance \u00b7 Medicare Supplements", "http://www.healthyseniorstc.com/", "/static/logos/american-sr-health.png", ""),
-    ("Panera Bread", "Try our new Mix & Match Value Menu today", "https://www.panerabread.com/", "/static/logos/panera.png", ""),
-    ("Stephen K. Denny A/C & Pool Heating", "Striving to exceed our customer's expectations", "http://www.stephenkdenny.com/", "/static/logos/stephen-denny.png", ""),
-    ("The Golf Club of Jupiter", "Nestled in the heart of Jupiter", "https://golfclubofjupiter.com/", "/static/logos/golf-club.png", ""),
-    ("Royal Cafe", "Best breakfast in Jupiter!", "http://royalcafejupiter.com/", "/static/logos/royal-cafe.png", ""),
-    ("Team 1 Sports \u2014 Alan Tanner", "Softball & baseball equipment", "https://teammikenworth.com/", "/static/logos/team1-sports.png", ""),
-    ("Uncle Mick's Bar & Grill", "Best bar and grill in Jupiter!", "http://www.unclemicks.com/", "/static/logos/uncle-micks.png", ""),
-    ("1000 North", "South Florida's premier waterfront restaurant", "http://1000north.com/", "/static/logos/1000-north.png", ""),
-    ("Cindy A. Sojka, P.A.", "Personal injury attorneys", "http://cindysojkalaw.com/", "/static/logos/cindy-sojka.png", ""),
-    ("Mike Parenti Comedy Show", "Coming soon!", "https://mikeparenti.com/", "/static/logos/mike-parenti.png", ""),
-    ("Food Shack", "A Jupiter favorite", "http://www.littlemoirsjupiter.com/", "/static/logos/food-shack.png", ""),
-    ("South East Rods & Customs", "Share our passion for cars", "http://serodsandcustoms.com/", "/static/logos/se-rods.png", ""),
-    ("Village Scoop Shack", "Ice cream & cereal bar", "https://www.villagescoopshack.com/", "/static/logos/village-scoop-shack.png", ""),
+    ("American Sr Health Services", "Health, Life & Long Term Insurance \u00b7 Medicare Supplements", "http://www.healthyseniorstc.com/", "1le3nK1MdPqY8qH0Tgzb1BUjbjMuyTB4E", ""),
+    ("Panera Bread", "Try our new Mix & Match Value Menu today", "https://www.panerabread.com/", "1pAOFUafHOkAH6fHIFeJjWTU4PwPMlIAM", ""),
+    ("Stephen K. Denny A/C & Pool Heating", "Striving to exceed our customer's expectations", "http://www.stephenkdenny.com/", "1Th9uRAjEfW-vhLkDisx1DBCJBvh0Z8Xc", ""),
+    ("The Golf Club of Jupiter", "Nestled in the heart of Jupiter", "https://golfclubofjupiter.com/", "1_e6wYNqDJOGEsqDDudUpvrFIPqK_t5sE", ""),
+    ("Royal Cafe", "Best breakfast in Jupiter!", "http://royalcafejupiter.com/", "166z3zdu8zPfTwJfj-m7enarLRooCTCaY", ""),
+    ("Team 1 Sports \u2014 Alan Tanner", "Softball & baseball equipment", "https://teammikenworth.com/", "17zkWfSVqNtZ2Uvhe-L4IyhT2VYF275Bo", ""),
+    ("Uncle Mick's Bar & Grill", "Best bar and grill in Jupiter!", "http://www.unclemicks.com/", "1jU_X9_jiqiDKENNJiaY2Z1ucDs09S-tz", ""),
+    ("1000 North", "South Florida's premier waterfront restaurant", "http://1000north.com/", "1WVIh0rPpM3U1SKXwvHxSRn2jsF8ICsXm", ""),
+    ("Cindy A. Sojka, P.A.", "Personal injury attorneys", "http://cindysojkalaw.com/", "1Gffs-pHQ0Cfxqun3FiaKa_ExsEjmhezC", ""),
+    ("Mike Parenti Comedy Show", "Coming soon!", "https://mikeparenti.com/", "1Ewyhqu9_JMxo6MZOxhnboelNIzKBPzxw", ""),
+    ("Food Shack", "A Jupiter favorite", "http://www.littlemoirsjupiter.com/", "1Wih3oO98Az7QhVmhkrNa8_k1E1FzelwT", ""),
+    ("South East Rods & Customs", "Share our passion for cars", "http://serodsandcustoms.com/", "1pft9Wt4I3g1rZiIkDGHKZju7rpBGPXFF", ""),
+    ("Village Scoop Shack", "Ice cream & cereal bar", "https://www.villagescoopshack.com/", "1xza0JCWClLBISuFTRjSjbPTDFC-RY6n8", ""),
     ("Benaim Eye Aesthetics", "Eye doctor", "http://www.benaimeye.com/", "https://benaimeye.com/wp-content/uploads/2024/07/Benaim-Eye-Aesthetics-e1721242084342.png", ""),
     ("Shuster Eye Center", "Eye doctor", "http://www.shustereyecenter.com/", "https://shustereyecenter.com/wp-content/uploads/2016/07/shuster-eye-logo-black-1.png", ""),
     ("Hibiscus Streatery", "Little Moir's Jupiter", "http://www.littlemoirsjupiter.com/hibiscus-streatery", "https://littlemoirs.com/wp-content/uploads/2024/10/cropped-Little-Moirs-Favicon-270x270.png", ""),
@@ -1211,7 +1231,7 @@ def sponsors():
                     "n": name,
                     "t": str(r.get("tagline") or "").strip(),
                     "u": str(r.get("website") or "").strip(),
-                    "l": _img_url(str(r.get("logo") or "")),
+                    "l": _img_url(_LEGACY_LOGO_FIX.get(str(r.get("logo") or "").strip(), str(r.get("logo") or ""))),
                     "p": str(r.get("phone") or "").strip(),
                     "order": _to_int(r.get("order")),
                 })
