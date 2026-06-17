@@ -60,9 +60,13 @@ def home():
         photos = sheets.highlight_photo_ids()
     except Exception:
         photos = []
+    try:
+        board = sheets.board_members()
+    except Exception:
+        board = []
     return render_template("index.html", notice=notice,
                            teams_posted=teams_posted, blackboard=blackboard,
-                           photos=photos)
+                           photos=photos, board=board)
 
 
 @app.route("/teams")
@@ -410,6 +414,73 @@ def admin_hof_delete(eid):
     except Exception:
         pass
     return redirect(url_for("admin_hof"))
+
+
+
+# ----------------------------------------------------------------------------
+# Board of Directors admin
+# ----------------------------------------------------------------------------
+@app.route("/admin/board")
+@login_required
+def admin_board():
+    configured = sheets.is_configured()
+    members, error = [], None
+    if configured:
+        try:
+            members = sheets.list_board_members()
+        except Exception as e:
+            error = str(e)
+    editing = None
+    edit_id = request.args.get("edit")
+    if edit_id:
+        for m in members:
+            if str(m.get("id")) == str(edit_id):
+                editing = m
+                break
+    return render_template("admin/manage-board.html",
+                           configured=configured, members=members,
+                           error=error, editing=editing)
+
+
+@app.route("/admin/board/add", methods=["POST"])
+@login_required
+def admin_board_add():
+    try:
+        sheets.add_board_member(request.form)
+    except Exception:
+        pass
+    return redirect(url_for("admin_board"))
+
+
+@app.route("/admin/board/<mid>/update", methods=["POST"])
+@login_required
+def admin_board_update(mid):
+    try:
+        sheets.update_board_member(mid, request.form)
+    except Exception:
+        pass
+    return redirect(url_for("admin_board"))
+
+
+@app.route("/admin/board/<mid>/toggle", methods=["POST"])
+@login_required
+def admin_board_toggle(mid):
+    active = request.form.get("active") == "1"
+    try:
+        sheets.set_board_active(mid, active)
+    except Exception:
+        pass
+    return redirect(url_for("admin_board"))
+
+
+@app.route("/admin/board/<mid>/delete", methods=["POST"])
+@login_required
+def admin_board_delete(mid):
+    try:
+        sheets.delete_board_member(mid)
+    except Exception:
+        pass
+    return redirect(url_for("admin_board"))
 
 
 if __name__ == "__main__":
