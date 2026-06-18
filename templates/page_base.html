@@ -92,7 +92,22 @@
   .menubar a:hover{background:rgba(255,255,255,.12);color:#fff}
   .menubar a.portal{border:1.5px solid rgba(255,255,255,.35);margin-left:5px}
   .menubar a.portal:hover{background:rgba(255,255,255,.16);border-color:rgba(255,255,255,.6)}
-  @media(max-width:640px){.menubar-inner{gap:2px;padding:6px 10px}.menubar a{font-size:.95rem;padding:9px 11px}}
+  /* Grouped drop-down menus (Games / Teams / League Info) */
+  .navgroup{position:relative}
+  .navgroup>summary{list-style:none;cursor:pointer;display:inline-flex;align-items:center;gap:6px;
+    font-family:var(--display);font-weight:600;color:rgba(255,255,255,.88);font-size:.9rem;
+    padding:8px 10px;border-radius:7px;white-space:nowrap;transition:background .15s,color .15s}
+  .navgroup>summary::-webkit-details-marker{display:none}
+  .navgroup>summary::after{content:"\25BE";font-size:.78em;opacity:.75;margin-top:1px}
+  .navgroup>summary:hover{background:rgba(255,255,255,.12);color:#fff}
+  .navgroup[open]>summary{background:rgba(255,255,255,.16);color:#fff}
+  .navmenu{position:absolute;top:100%;left:0;z-index:60;margin-top:6px;min-width:210px;
+    max-width:calc(100vw - 24px);background:#fff;border:1px solid var(--line);border-radius:12px;
+    padding:6px;box-shadow:0 14px 34px rgba(22,35,63,.26);display:flex;flex-direction:column}
+  .menubar .navmenu a{color:var(--navy);font-size:1.02rem;font-weight:600;padding:12px 14px;
+    border-radius:8px;white-space:nowrap}
+  .menubar .navmenu a:hover{background:var(--blue-tint);color:var(--blue)}
+  @media(max-width:640px){.menubar-inner{gap:2px;padding:6px 10px}.menubar a,.navgroup>summary{font-size:.95rem;padding:9px 11px}}
 </style>
 </head>
 <body>
