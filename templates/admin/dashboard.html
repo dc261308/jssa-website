@@ -95,13 +95,24 @@
         {% for n in notices %}
         <tr>
           <td><span class="badge {{ n.type }}">{{ n.type }}</span></td>
-          <td>{{ n.message }}</td>
+          <td>
+            <span id="text-{{ n.id }}">{{ n.message }}</span>
+            <form id="edit-{{ n.id }}" class="edit-form" style="display:none;margin-top:6px"
+                  method="post" action="{{ url_for('admin_edit', nid=n.id) }}">
+              <textarea name="message" rows="3" required>{{ n.message }}</textarea>
+              <div style="margin-top:6px">
+                <button class="mini on" type="submit">Save</button>
+                <button class="mini" type="button" onclick="cancelEdit('{{ n.id }}')">Cancel</button>
+              </div>
+            </form>
+          </td>
           <td>{{ n.created_by }}</td>
           <td>
             {% set is_on = (n.active|string|upper) in ['TRUE','1','YES'] %}
             {% if is_on %}<span class="status-on">● Live</span>{% else %}<span class="status-off">○ Off</span>{% endif %}
           </td>
           <td style="white-space:nowrap">
+            <button class="mini" type="button" onclick="startEdit('{{ n.id }}')">Edit</button>
             <form class="inline" method="post" action="{{ url_for('admin_toggle', nid=n.id) }}">
               <input type="hidden" name="active" value="{{ 0 if is_on else 1 }}">
               <button class="mini {{ 'off' if is_on else 'on' }}" type="submit">{{ 'Turn off' if is_on else 'Turn on' }}</button>
@@ -119,6 +130,16 @@
     <p style="color:var(--muted)">No updates posted yet. Use the form above to post your first one.</p>
   {% endif %}
 
+  <script>
+    function startEdit(id){
+      document.getElementById('text-'+id).style.display='none';
+      document.getElementById('edit-'+id).style.display='block';
+    }
+    function cancelEdit(id){
+      document.getElementById('edit-'+id).style.display='none';
+      document.getElementById('text-'+id).style.display='inline';
+    }
+  </script>
 {% endif %}
 {% endblock %}
 {% block extra_btns %}{% endblock %}

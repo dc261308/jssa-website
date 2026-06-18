@@ -243,6 +243,18 @@ def admin_toggle(nid):
     return redirect(url_for("admin_dashboard"))
 
 
+@app.route("/admin/notices/<nid>/edit", methods=["POST"])
+@login_required
+def admin_edit(nid):
+    message = request.form.get("message", "").strip()
+    if message:
+        try:
+            sheets.update_notice(nid, message)
+        except Exception:
+            pass
+    return redirect(url_for("admin_dashboard"))
+
+
 @app.route("/admin/notices/<nid>/delete", methods=["POST"])
 @login_required
 def admin_delete(nid):
