@@ -116,12 +116,6 @@ def league_section(section):
                            section=section)
 
 
-@app.route("/preview-hero")
-def preview_hero():
-    # Temporary page for previewing hero-image options. Safe to delete.
-    return render_template("preview-hero.html")
-
-
 @app.route("/healthz")
 def healthz():
     return jsonify(status="ok")

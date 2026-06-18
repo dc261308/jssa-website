@@ -71,12 +71,21 @@
   .hero{position:relative;overflow:hidden;color:#fff;background:linear-gradient(140deg,#0d1a33 0%,#16233f 52%,#1d3157 100%)}
   .hero::after{content:"";position:absolute;right:-120px;top:-120px;width:420px;height:420px;border-radius:50%;
     background:radial-gradient(circle,rgba(43,91,208,.35),transparent 70%);pointer-events:none}
+  .hero .ball{position:absolute;right:-50px;top:50%;transform:translateY(-50%) rotate(-14deg);
+    width:360px;z-index:1;pointer-events:none;filter:drop-shadow(0 18px 30px rgba(0,0,0,.42))}
+  .hero .trail{position:absolute;right:150px;top:30%;width:520px;opacity:.5;z-index:1;pointer-events:none}
+  .hero .wrap > *{position:relative;max-width:640px}
+  @media(max-width:760px){
+    .hero .ball{width:175px;right:-30px;opacity:.9}
+    .hero .trail{opacity:.22;width:340px;right:60px}
+    .hero .wrap > *{max-width:100%}
+  }
   .hero .wrap{position:relative;z-index:2;padding:42px 24px 40px}
   .hero .eyebrow{display:inline-flex;align-items:center;gap:9px;font-family:var(--display);font-weight:700;font-size:.8rem;letter-spacing:.12em;text-transform:uppercase;color:#9fc0ff}
   .hero .eyebrow::before{content:"";width:22px;height:2px;background:#9fc0ff;border-radius:2px}
   .hero h1{font-family:'Sablon Up','Archivo',sans-serif;font-weight:400;font-size:clamp(2.2rem,5vw,3.3rem);color:#fff;margin:12px 0 0;letter-spacing:.02em;text-transform:uppercase;line-height:1.06}
   .hero h1 .welcome{display:block;font-family:var(--display);font-size:.34em;font-weight:700;letter-spacing:.01em;color:#cfe0ff;margin-bottom:7px;text-transform:none}
-  .hero p.lede{font-size:1.5rem;color:#cbd6ee;margin-top:14px;max-width:62ch;line-height:1.4;letter-spacing:.005em}
+  .hero p.lede{font-size:1.15rem;color:#cbd6ee;margin-top:12px;max-width:none;line-height:1.4;letter-spacing:.005em}
   .hero p.lede strong{color:#fff;font-weight:700}
   .hero .deadline{margin-top:16px;color:#9fc0ff;font-size:1rem}
   .hero .deadline strong{color:#fff;font-weight:700}
@@ -274,6 +283,61 @@
 
 <!-- ============ HERO ============ -->
 <section class="hero">
+  <svg class="trail" viewBox="0 0 520 200" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <path d="M6 186 Q240 -50 512 70" fill="none" stroke="#9fc0ff" stroke-width="4.5" stroke-linecap="round" stroke-dasharray="2 17"/>
+  </svg>
+  <svg class="ball" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <defs>
+      <radialGradient id="leather" cx="36%" cy="30%" r="78%">
+        <stop offset="0%" stop-color="#f3f87f"/><stop offset="45%" stop-color="#d6e63f"/>
+        <stop offset="80%" stop-color="#b6cf28"/><stop offset="100%" stop-color="#8ea81b"/>
+      </radialGradient>
+      <radialGradient id="sheen" cx="34%" cy="26%" r="40%">
+        <stop offset="0%" stop-color="#ffffff" stop-opacity=".55"/><stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+      </radialGradient>
+    </defs>
+    <circle cx="100" cy="100" r="96" fill="url(#leather)"/>
+    <circle cx="100" cy="100" r="96" fill="url(#sheen)"/>
+    <circle cx="100" cy="100" r="95.5" fill="none" stroke="#7d9417" stroke-width="2" opacity=".5"/>
+    <path d="M44 24 C96 70 96 130 44 176" fill="none" stroke="#d8262b" stroke-width="3.4" opacity=".92"/>
+    <path d="M156 24 C104 70 104 130 156 176" fill="none" stroke="#d8262b" stroke-width="3.4" opacity=".92"/>
+    <g stroke="#d8262b" stroke-width="2.6" stroke-linecap="round" opacity=".92">
+      <line x1="57" y1="40" x2="69" y2="34"/>
+      <line x1="143" y1="40" x2="131" y2="34"/>
+    </g>
+    <g stroke="#d8262b" stroke-width="2.6" stroke-linecap="round" opacity=".92">
+      <line x1="64" y1="55" x2="76" y2="49"/>
+      <line x1="136" y1="55" x2="124" y2="49"/>
+    </g>
+    <g stroke="#d8262b" stroke-width="2.6" stroke-linecap="round" opacity=".92">
+      <line x1="57" y1="70" x2="69" y2="64"/>
+      <line x1="143" y1="70" x2="131" y2="64"/>
+    </g>
+    <g stroke="#d8262b" stroke-width="2.6" stroke-linecap="round" opacity=".92">
+      <line x1="64" y1="85" x2="76" y2="79"/>
+      <line x1="136" y1="85" x2="124" y2="79"/>
+    </g>
+    <g stroke="#d8262b" stroke-width="2.6" stroke-linecap="round" opacity=".92">
+      <line x1="57" y1="100" x2="69" y2="94"/>
+      <line x1="143" y1="100" x2="131" y2="94"/>
+    </g>
+    <g stroke="#d8262b" stroke-width="2.6" stroke-linecap="round" opacity=".92">
+      <line x1="64" y1="115" x2="76" y2="109"/>
+      <line x1="136" y1="115" x2="124" y2="109"/>
+    </g>
+    <g stroke="#d8262b" stroke-width="2.6" stroke-linecap="round" opacity=".92">
+      <line x1="57" y1="130" x2="69" y2="124"/>
+      <line x1="143" y1="130" x2="131" y2="124"/>
+    </g>
+    <g stroke="#d8262b" stroke-width="2.6" stroke-linecap="round" opacity=".92">
+      <line x1="64" y1="145" x2="76" y2="139"/>
+      <line x1="136" y1="145" x2="124" y2="139"/>
+    </g>
+    <g stroke="#d8262b" stroke-width="2.6" stroke-linecap="round" opacity=".92">
+      <line x1="57" y1="160" x2="69" y2="154"/>
+      <line x1="143" y1="160" x2="131" y2="154"/>
+    </g>
+  </svg>
   <div class="wrap">
     <span class="eyebrow">Jupiter, Florida · Players 55 &amp; Over</span>
     <h1><span class="welcome">Welcome to the home of</span>Jupiter Senior Softball</h1>
