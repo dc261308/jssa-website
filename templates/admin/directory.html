@@ -1,6 +1,6 @@
 {% extends "page_base.html" %}
 {% block eyebrow %}Admin{% endblock %}
-{% block sub %}<p class="sub">Full player list — board access only. Skill tier and score columns are hidden. Add a "Phone" column to the sheet and it appears here automatically.</p>{% endblock %}
+{% block sub %}<p class="sub">Player contact list — board access only: name, division, email and phone. Add a "Phone" column to the sheet and the numbers appear here automatically.</p>{% endblock %}
 {% block body %}
 <style>
   html{font-size:112.5%}
@@ -52,28 +52,19 @@
 <table class="dirtbl" id="dirTable">
   <thead>
     <tr>
-      {% for h in directory.headers %}
-      <th>{{ h }}</th>
-      {% endfor %}
+      <th>Name</th>
+      <th>Division</th>
+      <th>Email</th>
+      <th>Phone</th>
     </tr>
   </thead>
   <tbody>
     {% for p in directory.players %}
-    <tr data-search="{{ p.cells | join(' ') | lower }}">
-      {% for cell in p.cells %}
-      {% set h = directory.headers[loop.index0] | lower %}
-      <td>
-        {% if h == 'division' and cell %}
-          <span class="divbadge {{ cell }}">{{ cell }}</span>
-        {% elif h == 'active' %}
-          {{ '✓' if cell | lower in ('true','yes','1') else '' }}
-        {% elif h == 'email' and cell %}
-          <a href="mailto:{{ cell }}" style="color:var(--blue)">{{ cell }}</a>
-        {% else %}
-          {{ cell }}
-        {% endif %}
-      </td>
-      {% endfor %}
+    <tr data-search="{{ [p.name, p.div, p.email, p.phone] | join(' ') | lower }}">
+      <td style="font-weight:600">{{ p.name }}</td>
+      <td>{% if p.div %}<span class="divbadge {{ p.div }}">{{ p.div }}</span>{% endif %}</td>
+      <td>{% if p.email %}<a href="mailto:{{ p.email }}" style="color:var(--blue)">{{ p.email }}</a>{% endif %}</td>
+      <td>{% if p.phone %}<a href="tel:{{ p.phone }}" style="color:var(--blue)">{{ p.phone }}</a>{% endif %}</td>
     </tr>
     {% endfor %}
   </tbody>

@@ -1172,29 +1172,26 @@ def division_rosters():
         return _roster_cache["data"] or {"RED": [], "WHITE": [], "BLUE": []}
 
 
-# Board-only player directory — full member list, skill columns stripped.
-# Reads the same ROSTER_SHEET_ID sheet but returns every column EXCEPT
-# "Skill Tier", "Skill Score", and "Skill Ratings Sheet" (columns R/S/T).
-# Phone numbers will appear automatically once a "Phone" column is added to
-# the sheet — no code change needed. Not cached aggressively since it's
-# admin-only and not hit on every page load.
-
-_SKIP_COLUMNS = {"skill tier", "skill score", "skill ratings sheet"}
+# Board-only player directory — name, division, email and phone only.
+# Reads the same ROSTER_SHEET_ID sheet. Skill ratings and other internal
+# columns are intentionally left out. The Phone column appears automatically
+# once a header containing "phone" is added to the sheet — no code change
+# needed. Admin-only, so a short cache is fine.
 
 _dir_cache = {"data": None, "ts": 0.0}
 _DIR_TTL = 120  # 2 min — admin tool, freshness matters more here
 
 
 def player_directory():
-    """Full member list for the board portal.
-    Returns {'headers': [...], 'players': [{'div': ..., 'cells': [...]}]}
-    Players sorted by division order (RED/WHITE/BLUE) then last name.
-    Skill Tier / Skill Score / Skill Ratings Sheet columns are excluded."""
+    """Board-portal member list: name, division, email, phone.
+    Returns {'players': [{'name','div','email','phone'}]} sorted by division
+    (RED/WHITE/BLUE) then last name. The phone field stays blank until a
+    "Phone" column is added to the sheet."""
     now = time.time()
     with _lock:
         if _dir_cache["data"] is not None and now - _dir_cache["ts"] < _DIR_TTL:
             return _dir_cache["data"]
-    blank = {"headers": [], "players": []}
+    blank = {"players": []}
     try:
         if not (ROSTER_SHEET_ID and _SA_JSON):
             return blank
@@ -1206,14 +1203,14 @@ def player_directory():
         gc = gspread.authorize(creds)
         sh = gc.open_by_key(ROSTER_SHEET_ID)
 
-        rows = hdr_idx = None
+        rows = cols = None
         for ws in sh.worksheets():
             vals = ws.get_all_values()
             for i, r in enumerate(vals):
                 low = [_clean(c).lower() for c in r]
                 if "first name" in low and "last name" in low and "division" in low:
-                    hdr_idx = i
-                    rows = vals
+                    cols = {name: ci for ci, name in enumerate(low)}
+                    rows = vals[i + 1:]
                     break
             if rows is not None:
                 break
@@ -1221,37 +1218,35 @@ def player_directory():
         if rows is None:
             return blank
 
-        raw_headers = [_clean(c) for c in rows[hdr_idx]]
-        # Build keep-list: indices whose header is non-blank and not a skill col.
-        keep = [ci for ci, h in enumerate(raw_headers)
-                if h and h.lower() not in _SKIP_COLUMNS]
-        headers = [raw_headers[ci] for ci in keep]
+        fi = cols.get("first name")
+        li = cols.get("last name")
+        di = cols.get("division")
+        ei = cols.get("email")
+        # Match any header that mentions "phone" (Phone, Phone Number, Cell, …).
+        pi = next((ci for name, ci in cols.items() if "phone" in name), None)
+
+        def cell(r, ci):
+            return _clean(r[ci]) if ci is not None and len(r) > ci else ""
 
         div_order = {"RED": 0, "WHITE": 1, "BLUE": 2, "": 3}
-        try:
-            last_ci = headers.index("Last Name")
-        except ValueError:
-            last_ci = 2
-        try:
-            div_ci = headers.index("Division")
-        except ValueError:
-            div_ci = 4
-
         players = []
-        for r in rows[hdr_idx + 1:]:
-            cells = [_clean(r[ci]) if ci < len(r) else "" for ci in keep]
-            if not any(cells):
+        for r in rows:
+            first = cell(r, fi)
+            last = cell(r, li)
+            name = (first + " " + last).strip()
+            if not name:
                 continue
-            div = _norm_div(cells[div_ci]) if div_ci < len(cells) else ""
-            last = cells[last_ci].lower() if last_ci < len(cells) else ""
+            div = _norm_div(cell(r, di))
             players.append({
+                "name": name,
                 "div": div,
-                "sort_key": (div_order.get(div, 3), last),
-                "cells": cells,
+                "email": cell(r, ei),
+                "phone": cell(r, pi),
+                "sort_key": (div_order.get(div, 3), last.lower(), first.lower()),
             })
         players.sort(key=lambda p: p["sort_key"])
 
-        result = {"headers": headers, "players": players}
+        result = {"players": players}
         with _lock:
             _dir_cache["data"] = result
             _dir_cache["ts"] = now
