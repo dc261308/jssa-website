@@ -145,6 +145,18 @@ def delete_notice(notice_id):
     _invalidate()
 
 
+def update_notice(notice_id, message):
+    """Change the wording of an existing notice in place."""
+    ws = _worksheet()
+    records = ws.get_all_records(expected_headers=HEADERS)
+    col = HEADERS.index("message") + 1
+    for i, rec in enumerate(records):
+        if str(rec.get("id")) == str(notice_id):
+            ws.update_cell(i + 2, col, message)
+            break
+    _invalidate()
+
+
 # ----------------------------------------------------------------------------
 # Game Day Teams — read-only display of the league's PUBLIC teams sheet.
 #
