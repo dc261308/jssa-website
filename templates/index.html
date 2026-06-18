@@ -361,8 +361,31 @@
     <h1><span class="welcome">Welcome to the home of</span>Jupiter Senior Softball</h1>
     <p class="lede"><strong>Monday, Wednesday &amp; Friday</strong> at Jupiter Community Park</p>
     <div class="cta-row">
-      <a class="btn btn-red" href="https://docs.google.com/spreadsheets/d/1oHgGae0aXVVsr7t9hmDmoLxZWO5p9rLFPebSsXoFfAA/edit?gid=1612070845#gid=1612070845" target="_blank" rel="noopener">Click here to view the pickup game rosters &rarr;</a>
+      <a id="rosterBtn" class="btn btn-red" href="https://docs.google.com/spreadsheets/d/1oHgGae0aXVVsr7t9hmDmoLxZWO5p9rLFPebSsXoFfAA/edit?gid=1612070845#gid=1612070845" target="_blank" rel="noopener" style="display:none">Click here to view the pickup game rosters &rarr;</a>
     </div>
+    <script>
+    (function(){
+      // Show the roster button Sun/Tue/Thu after 3:15 PM Eastern,
+      // hide it again at noon Eastern the following day (Mon/Wed/Fri).
+      // Days: 0=Sun,1=Mon,2=Tue,3=Wed,4=Thu,5=Fri,6=Sat
+      var now = new Date(new Date().toLocaleString('en-US', {timeZone:'America/New_York'}));
+      var day = now.getDay();   // 0-6
+      var min = now.getHours() * 60 + now.getMinutes();  // minutes since midnight
+      var SHOW = 15 * 60 + 15;  // 3:15 PM = 915 min
+      var HIDE = 12 * 60;       // noon   = 720 min
+      var visible = false;
+      // Sun(0) after 3:15 → show; Mon(1) before noon → still show
+      if (day === 0 && min >= SHOW) visible = true;
+      if (day === 1 && min <  HIDE) visible = true;
+      // Tue(2) after 3:15 → show; Wed(3) before noon → still show
+      if (day === 2 && min >= SHOW) visible = true;
+      if (day === 3 && min <  HIDE) visible = true;
+      // Thu(4) after 3:15 → show; Fri(5) before noon → still show
+      if (day === 4 && min >= SHOW) visible = true;
+      if (day === 5 && min <  HIDE) visible = true;
+      if (visible) document.getElementById('rosterBtn').style.display = '';
+    })();
+    </script>
 
   </div>
 </section>
