@@ -1170,6 +1170,7 @@ def division_rosters():
         return _roster_cache["data"] or {"RED": [], "WHITE": [], "BLUE": []}
 
 
+
 # ----------------------------------------------------------------------------
 # Sponsors — admin-managed, seeded with the current sponsor list
 # ----------------------------------------------------------------------------
