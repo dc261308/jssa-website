@@ -1,0 +1,43 @@
+{% extends "page_base.html" %}
+{% block eyebrow %}{{ section_eyebrow }}{% endblock %}
+{% block sub %}<p class="sub">Every team's roster for the season, grouped by division.</p>{% endblock %}
+{% block body %}
+<style>
+  .divwrap{margin:0 0 30px}
+  .divhead{display:inline-block;font-family:var(--display);font-weight:800;font-size:1.15rem;
+    letter-spacing:.04em;color:#fff;padding:8px 18px;border-radius:10px;margin-bottom:14px}
+  .divhead.RED{background:var(--red)} .divhead.BLUE{background:var(--blue)}
+  .divhead.WHITE{background:var(--navy)}
+  .teamgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:16px}
+  .tcard{background:var(--surface);border-radius:14px;box-shadow:var(--shadow);
+    border-top:5px solid var(--line);overflow:hidden}
+  .tcard.RED{border-top-color:var(--red)} .tcard.BLUE{border-top-color:var(--blue)}
+  .tcard.WHITE{border-top-color:var(--navy)}
+  .tname{font-family:var(--display);font-weight:800;color:var(--navy);font-size:1.2rem;
+    padding:14px 18px 8px}
+  .tcount{color:var(--muted);font-size:.85rem;font-weight:600;padding:0 18px 8px}
+  .tcard ol{list-style:none;padding:0 18px 16px;margin:0}
+  .tcard li{padding:7px 0;border-top:1px solid var(--line);font-size:1.05rem;color:var(--navy)}
+</style>
+{% for div in ['RED','WHITE','BLUE'] %}
+  {% set teams = season.rosters[div] %}
+  {% if teams %}
+  <div class="divwrap">
+    <div class="divhead {{ div }}">{{ div }} DIVISION</div>
+    <div class="teamgrid">
+      {% for t in teams %}
+      <div class="tcard {{ div }}">
+        <div class="tname">{{ t.team }}</div>
+        <div class="tcount">{{ t.players|length }} player{{ '' if t.players|length == 1 else 's' }}</div>
+        <ol>
+          {% for p in t.players %}<li>{{ p }}</li>{% endfor %}
+        </ol>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+{% endfor %}
+{% endblock %}
+{% block footer_btns %}<a class="btn btn-navy" href="/">← Back to Home</a>{% endblock %}
+{% block extra_btns %}<a class="btn" style="background:var(--blue);color:#fff" href="/league/schedules">View Schedule →</a>{% endblock %}

@@ -1,0 +1,47 @@
+{% extends "page_base.html" %}
+{% block eyebrow %}{{ section_eyebrow }}{% endblock %}
+{% block sub %}<p class="sub">The full league schedule. Finished games show their final score; upcoming games show the date, time and field.</p>{% endblock %}
+{% block body %}
+<style>
+  .sch{display:flex;flex-direction:column;gap:12px;max-width:760px;margin:0 auto}
+  .gcard{background:var(--surface);border-radius:14px;box-shadow:var(--shadow);
+    border-left:6px solid var(--line);padding:16px 18px;display:flex;align-items:center;
+    gap:16px;flex-wrap:wrap}
+  .gcard.RED{border-left-color:var(--red)} .gcard.BLUE{border-left-color:var(--blue)}
+  .gcard.WHITE{border-left-color:var(--navy)}
+  .gwhen{min-width:150px}
+  .gwhen .d{font-family:var(--display);font-weight:800;color:var(--navy);font-size:1.05rem}
+  .gwhen .t{color:var(--muted);font-size:.95rem}
+  .gmatch{flex:1;min-width:200px;font-size:1.15rem;font-weight:700;color:var(--navy)}
+  .gmatch .vs{color:var(--muted);font-weight:600;font-size:.95rem;margin:0 8px}
+  .gright{text-align:right;min-width:110px}
+  .gscore{font-family:var(--display);font-weight:800;font-size:1.4rem;color:var(--navy)}
+  .gstatus{display:inline-block;font-family:var(--display);font-weight:700;font-size:.78rem;
+    letter-spacing:.05em;text-transform:uppercase;padding:5px 12px;border-radius:999px;
+    background:var(--blue-tint);color:var(--blue)}
+  .gstatus.final{background:#e9f7ee;color:#1c8a44}
+  @media(max-width:560px){.gright{text-align:left;width:100%}}
+</style>
+<div class="sch">
+  {% for g in season.schedule %}
+  {% set final = g.score_home != '' and g.score_away != '' %}
+  <div class="gcard {{ g.division }}">
+    <div class="gwhen">
+      <div class="d">{{ g.date }}</div>
+      <div class="t">{{ g.time }}{% if g.field %} · {{ g.field }}{% endif %}</div>
+    </div>
+    <div class="gmatch">{{ g.home }}<span class="vs">vs</span>{{ g.away }}</div>
+    <div class="gright">
+      {% if final %}
+        <div class="gscore">{{ g.score_home }} – {{ g.score_away }}</div>
+        <span class="gstatus final">Final</span>
+      {% else %}
+        <span class="gstatus">{{ g.status or 'Scheduled' }}</span>
+      {% endif %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}
+{% block footer_btns %}<a class="btn btn-navy" href="/">← Back to Home</a>{% endblock %}
+{% block extra_btns %}<a class="btn" style="background:var(--blue);color:#fff" href="/league/standings">View Standings →</a>{% endblock %}

@@ -1,0 +1,49 @@
+{% extends "page_base.html" %}
+{% block eyebrow %}{{ section_eyebrow }}{% endblock %}
+{% block sub %}<p class="sub">Win-loss records and run totals for every team, by division. Updates automatically as game scores come in.</p>{% endblock %}
+{% block body %}
+<style>
+  .divwrap{margin:0 0 34px}
+  .divhead{display:inline-block;font-family:var(--display);font-weight:800;font-size:1.15rem;
+    letter-spacing:.04em;color:#fff;padding:8px 18px;border-radius:10px;margin-bottom:12px}
+  .divhead.RED{background:var(--red)} .divhead.BLUE{background:var(--blue)}
+  .divhead.WHITE{background:var(--navy)}
+  .stbl{width:100%;border-collapse:collapse;background:var(--surface);border-radius:14px;
+    overflow:hidden;box-shadow:var(--shadow);font-size:1.05rem}
+  .stbl th,.stbl td{padding:13px 12px;text-align:center;border-bottom:1px solid var(--line)}
+  .stbl th{background:var(--blue-tint);font-family:var(--display);color:var(--navy);
+    font-size:.82rem;letter-spacing:.06em;text-transform:uppercase}
+  .stbl td.team{text-align:left;font-weight:700;color:var(--navy);font-size:1.12rem}
+  .stbl tr:last-child td{border-bottom:none}
+  .stbl tr:nth-child(even) td{background:#fafbfe}
+  .pos{color:var(--blue);font-weight:700} .neg{color:var(--red);font-weight:700}
+  @media(max-width:560px){.stbl{font-size:.95rem}.stbl th,.stbl td{padding:10px 6px}}
+</style>
+{% for div in ['RED','WHITE','BLUE'] %}
+  {% set teams = season.standings[div] %}
+  {% if teams %}
+  <div class="divwrap">
+    <div class="divhead {{ div }}">{{ div }} DIVISION</div>
+    <table class="stbl">
+      <thead>
+        <tr><th>Team</th><th>W</th><th>L</th><th>Win %</th><th>GB</th>
+            <th>Runs For</th><th>Runs Against</th><th>Diff</th></tr>
+      </thead>
+      <tbody>
+        {% for t in teams %}
+        <tr>
+          <td class="team">{{ t.team }}</td>
+          <td>{{ t.wins }}</td><td>{{ t.losses }}</td>
+          <td>{{ t.pct }}</td><td>{{ t.gb }}</td>
+          <td>{{ t.rf }}</td><td>{{ t.ra }}</td>
+          <td class="{% if t.diff.startswith('-') %}neg{% elif t.diff not in ('0','') %}pos{% endif %}">{{ t.diff }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+{% endfor %}
+{% endblock %}
+{% block footer_btns %}<a class="btn btn-navy" href="/">← Back to Home</a>{% endblock %}
+{% block extra_btns %}<a class="btn" style="background:var(--blue);color:#fff" href="/league/schedules">View Schedule →</a>{% endblock %}

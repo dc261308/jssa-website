@@ -1,0 +1,44 @@
+{% extends "page_base.html" %}
+{% block eyebrow %}{{ section_eyebrow }}{% endblock %}
+{% block sub %}<p class="sub">Final scores from completed games, newest first.</p>{% endblock %}
+{% block body %}
+<style>
+  .res{display:flex;flex-direction:column;gap:12px;max-width:760px;margin:0 auto}
+  .rcard{background:var(--surface);border-radius:14px;box-shadow:var(--shadow);
+    border-left:6px solid var(--line);padding:16px 18px}
+  .rcard.RED{border-left-color:var(--red)} .rcard.BLUE{border-left-color:var(--blue)}
+  .rcard.WHITE{border-left-color:var(--navy)}
+  .rtop{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap}
+  .rwhen{color:var(--muted);font-size:.95rem}
+  .rfield{font-family:var(--display);font-weight:700;color:var(--navy);font-size:.9rem}
+  .rline{display:flex;justify-content:space-between;align-items:center;padding:7px 0;font-size:1.18rem}
+  .rline.win{font-weight:800;color:var(--navy)}
+  .rline.win .rsc{color:#1c8a44}
+  .rline.lose{color:var(--muted)}
+  .rteam{display:flex;align-items:center;gap:8px}
+  .rsc{font-family:var(--display);font-weight:800;font-size:1.35rem}
+  .rresult{margin-top:8px;font-size:.95rem;color:#1c8a44;font-weight:700}
+</style>
+<div class="res">
+  {% for g in season.results|reverse %}
+  {% set hs = g.home_score|int(-1) %}{% set as = g.away_score|int(-1) %}
+  <div class="rcard {{ g.division }}">
+    <div class="rtop">
+      <span class="rwhen">{{ g.date }}{% if g.time %} · {{ g.time }}{% endif %}</span>
+      <span class="rfield">{{ g.field }}</span>
+    </div>
+    <div class="rline {% if hs > as %}win{% elif hs < as %}lose{% endif %}">
+      <span class="rteam">{{ g.home }}{% if hs > as %} ✓{% endif %}</span>
+      <span class="rsc">{{ g.home_score }}</span>
+    </div>
+    <div class="rline {% if as > hs %}win{% elif as < hs %}lose{% endif %}">
+      <span class="rteam">{{ g.away }}{% if as > hs %} ✓{% endif %}</span>
+      <span class="rsc">{{ g.away_score }}</span>
+    </div>
+    {% if g.result %}<div class="rresult">{{ g.result }}</div>{% endif %}
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}
+{% block footer_btns %}<a class="btn btn-navy" href="/">← Back to Home</a>{% endblock %}
+{% block extra_btns %}<a class="btn" style="background:var(--blue);color:#fff" href="/league/standings">View Standings →</a>{% endblock %}

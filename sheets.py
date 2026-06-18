@@ -1170,6 +1170,230 @@ def division_rosters():
         return _roster_cache["data"] or {"RED": [], "WHITE": [], "BLUE": []}
 
 
+# ----------------------------------------------------------------------------
+# Organized league season — Teams, Rosters, Schedule, Results, Standings.
+# ----------------------------------------------------------------------------
+# All of this lives in tabs inside the league's "Website Control Sheet" (the
+# same spreadsheet that runs the prediction contest and catches form
+# submissions). We only READ here; scores are written back separately via
+# set_game_score() so the sheet's own formulas keep doing the math.
+CONTROL_SHEET_ID = os.environ.get(
+    "CONTROL_SHEET_ID", "1Bpb1PGs2-egEql9rgIsNzFWlRKSrBYLxWdy1NeFkmaM"
+).strip()
+
+_season_cache = {"data": None, "ts": 0.0}
+_SEASON_TTL = 120  # seconds
+
+
+def _control_sheet(readonly=True):
+    import gspread
+    from google.oauth2.service_account import Credentials
+    info = json.loads(_SA_JSON)
+    scope = "spreadsheets.readonly" if readonly else "spreadsheets"
+    scopes = ["https://www.googleapis.com/auth/" + scope]
+    creds = Credentials.from_service_account_info(info, scopes=scopes)
+    gc = gspread.authorize(creds)
+    return gc.open_by_key(CONTROL_SHEET_ID)
+
+
+def _scan_tab(sh, required):
+    """Find the first worksheet whose header row contains every name in
+    `required`. Returns (worksheet, all_values, header_index, {name: col})."""
+    for ws in sh.worksheets():
+        vals = ws.get_all_values()
+        for i, r in enumerate(vals):
+            low = [_clean(c).lower() for c in r]
+            if all(req in low for req in required):
+                return ws, vals, i, {name: ci for ci, name in enumerate(low)}
+    return None, None, None, None
+
+
+def _row_reader(cols):
+    def reader(r):
+        def cell(name, *alts):
+            for n in (name,) + alts:
+                ci = cols.get(n)
+                if ci is not None and len(r) > ci:
+                    return _clean(r[ci])
+            return ""
+        return cell
+    return reader
+
+
+def league_season():
+    """Everything the public league pages need, read from the Control Sheet:
+        {'standings': {RED/WHITE/BLUE: [team,...]},
+         'schedule':  [game,...],
+         'results':   [game,...],
+         'rosters':   {RED/WHITE/BLUE: [{team, players:[...]}]}}
+    Cached for _SEASON_TTL seconds; last good value kept on error."""
+    now = time.time()
+    with _lock:
+        if _season_cache["data"] is not None and now - _season_cache["ts"] < _SEASON_TTL:
+            return _season_cache["data"]
+
+    blank = {"standings": {"RED": [], "WHITE": [], "BLUE": []},
+             "schedule": [], "results": [],
+             "rosters": {"RED": [], "WHITE": [], "BLUE": []}}
+    try:
+        data = {"standings": {"RED": [], "WHITE": [], "BLUE": []},
+                "schedule": [], "results": [],
+                "rosters": {"RED": [], "WHITE": [], "BLUE": []}}
+        if CONTROL_SHEET_ID and _SA_JSON:
+            sh = _control_sheet(readonly=True)
+
+            # --- Standings ---
+            _, rows, hi, cols = _scan_tab(sh, ["team", "wins", "losses"])
+            if rows is not None:
+                for r in rows[hi + 1:]:
+                    g = _row_reader(cols)(r)
+                    team = g("team", "team name")
+                    div = _norm_div(g("division"))
+                    if not team or not div:
+                        continue
+                    data["standings"][div].append({
+                        "team": team,
+                        "wins": g("wins"), "losses": g("losses"),
+                        "pct": g("win %", "win%", "pct"),
+                        "gb": g("games back", "gb"),
+                        "rf": g("runs for"), "ra": g("runs against"),
+                        "diff": g("run diff", "diff"),
+                    })
+
+            # --- Schedule ---
+            _, rows, hi, cols = _scan_tab(sh, ["home team", "away team", "status"])
+            if rows is not None:
+                for r in rows[hi + 1:]:
+                    g = _row_reader(cols)(r)
+                    home = g("home team")
+                    away = g("away team")
+                    if not (home or away):
+                        continue
+                    data["schedule"].append({
+                        "division": _norm_div(g("division")),
+                        "date": g("date"), "time": g("time"), "field": g("field"),
+                        "home": home, "away": away,
+                        "score_home": g("score home"), "score_away": g("score away"),
+                        "status": g("status"),
+                    })
+
+            # --- Results ---
+            _, rows, hi, cols = _scan_tab(sh, ["result"])
+            if rows is not None and ("home team" in cols and "away team" in cols):
+                for r in rows[hi + 1:]:
+                    g = _row_reader(cols)(r)
+                    home = g("home team")
+                    away = g("away team")
+                    result = g("result")
+                    if not (home or away) or not result:
+                        continue
+                    data["results"].append({
+                        "division": _norm_div(g("division")),
+                        "date": g("date"), "time": g("time"), "field": g("field"),
+                        "home": home, "away": away,
+                        "home_score": g("home score", "score home"),
+                        "away_score": g("away score", "score away"),
+                        "result": result,
+                    })
+
+            # --- Rosters (Players tab: Team Name + player names) ---
+            _, rows, hi, cols = _scan_tab(
+                sh, ["team name", "player first name", "player last name"])
+            if rows is not None:
+                bucket = {}  # (div, team) -> [names]
+                order = []
+                for r in rows[hi + 1:]:
+                    g = _row_reader(cols)(r)
+                    team = g("team name")
+                    div = _norm_div(g("division"))
+                    name = (g("player first name") + " " + g("player last name")).strip()
+                    if not team or not div or not name:
+                        continue
+                    key = (div, team)
+                    if key not in bucket:
+                        bucket[key] = []
+                        order.append(key)
+                    bucket[key].append(name)
+                for (div, team) in order:
+                    players = sorted(bucket[(div, team)],
+                                     key=lambda n: n.split()[-1].lower())
+                    data["rosters"][div].append({"team": team, "players": players})
+
+        with _lock:
+            _season_cache["data"] = data
+            _season_cache["ts"] = now
+        return data
+    except Exception:
+        return _season_cache["data"] or blank
+
+
+def schedule_games_for_scoring():
+    """List of scheduled games for the admin score form, each tagged with the
+    sheet row number so a score can be written straight back to the right row:
+        [{row, division, date, time, field, home, away,
+          score_home, score_away, status}]"""
+    try:
+        if not (CONTROL_SHEET_ID and _SA_JSON):
+            return []
+        sh = _control_sheet(readonly=True)
+        ws, rows, hi, cols = _scan_tab(sh, ["home team", "away team", "status"])
+        if rows is None:
+            return []
+        out = []
+        for idx in range(hi + 1, len(rows)):
+            r = rows[idx]
+            g = _row_reader(cols)(r)
+            home = g("home team")
+            away = g("away team")
+            if not (home or away):
+                continue
+            out.append({
+                "row": idx + 1,  # gspread rows are 1-based
+                "division": _norm_div(g("division")),
+                "date": g("date"), "time": g("time"), "field": g("field"),
+                "home": home, "away": away,
+                "score_home": g("score home"), "score_away": g("score away"),
+                "status": g("status"),
+            })
+        return out
+    except Exception:
+        return []
+
+
+def set_game_score(row, score_home, score_away, status="Final"):
+    """Write a final score back into the Schedule tab for one game row. Updates
+    the 'Score Home', 'Score Away' and 'Status' columns; the sheet's own
+    formulas then update Results and Standings. Returns True on success."""
+    try:
+        if not (CONTROL_SHEET_ID and _SA_JSON):
+            return False
+        import gspread
+        sh = _control_sheet(readonly=False)
+        ws, rows, hi, cols = _scan_tab(sh, ["home team", "away team", "status"])
+        if ws is None:
+            return False
+        sh_i = cols.get("score home")
+        sa_i = cols.get("score away")
+        st_i = cols.get("status")
+        updates = []
+        if sh_i is not None:
+            updates.append({"range": gspread.utils.rowcol_to_a1(row, sh_i + 1),
+                            "values": [[str(score_home)]]})
+        if sa_i is not None:
+            updates.append({"range": gspread.utils.rowcol_to_a1(row, sa_i + 1),
+                            "values": [[str(score_away)]]})
+        if st_i is not None and status:
+            updates.append({"range": gspread.utils.rowcol_to_a1(row, st_i + 1),
+                            "values": [[status]]})
+        if updates:
+            ws.batch_update(updates)
+        with _lock:                      # force the public pages to refresh
+            _season_cache["ts"] = 0.0
+        return True
+    except Exception:
+        return False
+
+
 
 # ----------------------------------------------------------------------------
 # Sponsors — admin-managed, seeded with the current sponsor list

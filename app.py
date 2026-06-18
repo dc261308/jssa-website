@@ -111,9 +111,34 @@ def league_section(section):
     if meta is None:
         abort(404)
     title, eyebrow = meta
-    return render_template("pages/league-section.html",
+    try:
+        season = sheets.league_season()
+    except Exception:
+        season = {"standings": {"RED": [], "WHITE": [], "BLUE": []},
+                  "schedule": [], "results": [],
+                  "rosters": {"RED": [], "WHITE": [], "BLUE": []}}
+    # Does this section have any data to show yet? If not, the template falls
+    # back to the friendly "off-season" message.
+    has_data = {
+        "rosters":   any(season["rosters"].values()),
+        "schedules": bool(season["schedule"]),
+        "results":   bool(season["results"]),
+        "standings": any(season["standings"].values()),
+        "teams":     any(season["standings"].values()),
+    }.get(section, False)
+    template = "pages/league-section.html"
+    section_template = {
+        "teams":     "pages/league-rosters.html",
+        "rosters":   "pages/league-rosters.html",
+        "schedules": "pages/league-schedule.html",
+        "results":   "pages/league-results.html",
+        "standings": "pages/league-standings.html",
+    }.get(section)
+    if section_template and has_data:
+        template = section_template
+    return render_template(template,
                            page_title=title, section_eyebrow=eyebrow,
-                           section=section)
+                           section=section, season=season)
 
 
 @app.route("/healthz")
@@ -216,6 +241,32 @@ def admin_dashboard():
             error = str(e)
     return render_template("admin/dashboard.html",
                            configured=configured, notices=notices, error=error)
+
+
+@app.route("/admin/scores")
+@login_required
+def admin_scores():
+    try:
+        games = sheets.schedule_games_for_scoring()
+    except Exception:
+        games = []
+    return render_template("admin/scores.html", games=games,
+                           saved=request.args.get("saved"))
+
+
+@app.route("/admin/scores/save", methods=["POST"])
+@login_required
+def admin_scores_save():
+    row = request.form.get("row", "").strip()
+    score_home = request.form.get("score_home", "").strip()
+    score_away = request.form.get("score_away", "").strip()
+    ok = False
+    if row.isdigit() and score_home != "" and score_away != "":
+        try:
+            ok = sheets.set_game_score(int(row), score_home, score_away)
+        except Exception:
+            ok = False
+    return redirect(url_for("admin_scores", saved=("1" if ok else "0")))
 
 
 @app.route("/admin/notices/add", methods=["POST"])

@@ -1,0 +1,57 @@
+{% extends "page_base.html" %}
+{% block eyebrow %}Admin{% endblock %}
+{% block sub %}<p class="sub">Enter the final score for each game. Saving writes it straight into the Schedule tab of the control sheet — the standings update automatically.</p>{% endblock %}
+{% block body %}
+<style>
+  html{font-size:112.5%}
+  .adminbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}
+  .adminbar a{font-weight:600}
+  .saved{background:#e8f6ee;border:1px solid #bfe3cd;color:#1a7f4b;border-radius:12px;padding:14px 18px;margin-bottom:18px;font-weight:600}
+  .failed{background:var(--red-tint);border:1px solid #f0c9cb;color:#b3151b;border-radius:12px;padding:14px 18px;margin-bottom:18px;font-weight:600}
+  .sgame{background:#fff;border:1px solid var(--line);border-left:6px solid var(--line);
+    border-radius:12px;padding:14px 16px;margin-bottom:12px}
+  .sgame.RED{border-left-color:var(--red)} .sgame.BLUE{border-left-color:var(--blue)}
+  .sgame.WHITE{border-left-color:var(--navy)}
+  .sgwhen{color:var(--muted);font-size:.9rem;margin-bottom:8px}
+  .sgform{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+  .sgteam{display:flex;align-items:center;gap:8px;font-weight:700;color:var(--navy);font-size:1.08rem}
+  .sgteam input{width:70px;font-size:1.2rem;text-align:center;padding:8px;border:1px solid var(--line);border-radius:8px}
+  .sgvs{color:var(--muted);font-weight:600}
+  .sgsave{margin-left:auto}
+  .sgsave button{min-height:44px;padding:0 20px}
+  .donetag{display:inline-block;font-family:var(--display);font-weight:700;font-size:.72rem;
+    letter-spacing:.05em;text-transform:uppercase;padding:4px 10px;border-radius:999px;
+    background:#e8f6ee;color:#1a7f4b;margin-left:8px}
+  @media(max-width:560px){.sgsave{margin-left:0;width:100%}.sgsave button{width:100%}}
+</style>
+
+<div class="adminbar">
+  <a href="{{ url_for('admin_dashboard') }}">← Back to dashboard</a>
+  <a href="{{ url_for('admin_logout') }}">Sign out</a>
+</div>
+
+{% if saved == '1' %}<div class="saved">✓ Score saved. The standings will update within a couple of minutes.</div>{% endif %}
+{% if saved == '0' %}<div class="failed">Couldn't save that score. Make sure both score boxes have a number, then try again.</div>{% endif %}
+
+{% if not games %}
+  <p style="color:var(--muted)">No games found in the Schedule tab yet. Once the schedule is filled in, the games will appear here ready to score.</p>
+{% else %}
+  {% for g in games %}
+  {% set done = g.score_home != '' and g.score_away != '' %}
+  <div class="sgame {{ g.division }}">
+    <div class="sgwhen">{{ g.date }}{% if g.time %} · {{ g.time }}{% endif %}{% if g.field %} · {{ g.field }}{% endif %}{% if done %}<span class="donetag">Final {{ g.score_home }}–{{ g.score_away }}</span>{% endif %}</div>
+    <form class="sgform" method="post" action="{{ url_for('admin_scores_save') }}">
+      <input type="hidden" name="row" value="{{ g.row }}">
+      <span class="sgteam">{{ g.home }}
+        <input type="number" name="score_home" min="0" value="{{ g.score_home }}" placeholder="0" required></span>
+      <span class="sgvs">vs</span>
+      <span class="sgteam">{{ g.away }}
+        <input type="number" name="score_away" min="0" value="{{ g.score_away }}" placeholder="0" required></span>
+      <span class="sgsave"><button class="btn btn-navy" type="submit">{{ 'Update' if done else 'Save score' }}</button></span>
+    </form>
+  </div>
+  {% endfor %}
+{% endif %}
+{% endblock %}
+{% block footer_btns %}<a class="btn btn-navy" href="{{ url_for('admin_dashboard') }}">← Back to dashboard</a>{% endblock %}
+{% block extra_btns %}{% endblock %}
