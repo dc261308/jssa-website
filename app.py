@@ -92,6 +92,30 @@ def players():
                            page_title="Players by Division", rosters=rosters)
 
 
+# Organized-league sections (fall/winter season, ~mid-Oct through March).
+# Each will read its data from the league Google Sheet once that's set up; until
+# then they show a friendly "season runs October-March" placeholder so the page
+# never looks broken or empty. Tuple is (page title, short eyebrow label).
+LEAGUE_SECTIONS = {
+    "teams":     ("League Teams",     "Organized League"),
+    "rosters":   ("League Rosters",   "Organized League"),
+    "schedules": ("League Schedule",  "Organized League"),
+    "results":   ("Game Results",     "Organized League"),
+    "standings": ("League Standings", "Organized League"),
+}
+
+
+@app.route("/league/<section>")
+def league_section(section):
+    meta = LEAGUE_SECTIONS.get(section)
+    if meta is None:
+        abort(404)
+    title, eyebrow = meta
+    return render_template("pages/league-section.html",
+                           page_title=title, section_eyebrow=eyebrow,
+                           section=section)
+
+
 @app.route("/healthz")
 def healthz():
     return jsonify(status="ok")

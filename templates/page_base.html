@@ -82,7 +82,17 @@
   footer .fine{margin-top:14px;font-size:.9rem;color:#9aa6c0}
 
   @media(max-width:640px){.nav{height:64px}.brand img{height:42px}.page-main{padding:34px 20px 20px}}
-  @media print{header,footer,.doc-btns{display:none}.article{border:none;box-shadow:none;padding:0}body{background:#fff}}
+  @media print{header,footer,.doc-btns,.menubar{display:none}.article{border:none;box-shadow:none;padding:0}body{background:#fff}}
+
+  /* ====== MAIN MENU BAR (shared with homepage) ====== */
+  .menubar{background:var(--navy);border-top:3px solid var(--blue)}
+  .menubar-inner{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:4px;padding:8px 24px}
+  .menubar a{font-family:var(--display);font-weight:700;color:#fff;font-size:1.02rem;
+    padding:11px 16px;border-radius:9px;letter-spacing:.01em;transition:background .15s}
+  .menubar a:hover{background:rgba(255,255,255,.14)}
+  .menubar a.cta{background:var(--red);color:#fff;margin-left:6px}
+  .menubar a.cta:hover{background:#b91e22}
+  @media(max-width:640px){.menubar-inner{gap:2px;padding:6px 10px}.menubar a{font-size:.95rem;padding:9px 11px}}
 </style>
 </head>
 <body>
@@ -92,6 +102,11 @@
     <a class="home" href="/">← Home</a>
   </div>
 </header>
+<nav class="menubar" aria-label="Main menu">
+  <div class="wrap menubar-inner">
+    {% include '_navlinks.html' %}
+  </div>
+</nav>
 
 <main class="page-main">
   <div class="page-head">
@@ -105,7 +120,7 @@
   </article>
 
   <div class="doc-btns">
-    <a class="btn btn-navy" href="/#docs">← Back to documents</a>
+    {% block footer_btns %}<a class="btn btn-navy" href="/#docs">← Back to documents</a>{% endblock %}
     {% block extra_btns %}{% endblock %}
   </div>
 </main>
