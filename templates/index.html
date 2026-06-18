@@ -90,13 +90,14 @@
   .hero{position:relative;overflow:hidden;color:#fff;background:linear-gradient(140deg,#0d1a33 0%,#16233f 52%,#1d3157 100%)}
   .hero::after{content:"";position:absolute;right:-120px;top:-120px;width:420px;height:420px;border-radius:50%;
     background:radial-gradient(circle,rgba(43,91,208,.35),transparent 70%);pointer-events:none}
-  .hero .ball{position:absolute;right:160px;top:50%;transform:translateY(-50%) rotate(-14deg);
-    width:340px;z-index:1;pointer-events:none;filter:drop-shadow(0 18px 30px rgba(0,0,0,.42))}
+  .hero .ball{position:absolute;right:140px;top:50%;transform:translateY(-50%) rotate(-8deg);
+    width:280px;height:280px;object-fit:contain;z-index:1;pointer-events:none;
+    filter:drop-shadow(0 16px 26px rgba(0,0,0,.42))}
   .hero .trail{position:absolute;right:150px;top:30%;width:520px;opacity:.5;z-index:1;pointer-events:none}
   .hero .wrap > *{position:relative;max-width:640px}
   .hero .wrap > h1{max-width:none}
   @media(max-width:760px){
-    .hero .ball{width:175px;right:-30px;opacity:.9}
+    .hero .ball{width:160px;height:160px;right:-20px;opacity:.92}
     .hero .trail{opacity:.22;width:340px;right:60px}
     .hero .wrap > *{max-width:100%}
   }
@@ -392,13 +393,13 @@
      delete this whole section (down to its closing </section>) to remove it. -->
 <section class="quickbar" aria-label="Quick actions">
   <style>
-    .quickbar{padding:18px 0 6px}
-    .qb-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+    .quickbar{background:#dde5f1;padding:26px 0 26px}
+    .qb-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;max-width:1040px;margin:0 auto}
     .qb-btn{display:flex;flex-direction:column;align-items:center;text-align:center;gap:8px;
       min-height:150px;justify-content:center;padding:24px 18px;border-radius:18px;
-      background:var(--surface);border:2px solid var(--line);box-shadow:var(--shadow);
+      background:#fff;border:2px solid #c2cfe4;box-shadow:0 6px 20px rgba(22,35,63,.12);
       color:var(--navy);transition:transform .08s,border-color .15s,box-shadow .15s}
-    .qb-btn:hover{transform:translateY(-3px);border-color:var(--blue);box-shadow:0 10px 26px rgba(22,35,63,.16)}
+    .qb-btn:hover{transform:translateY(-3px);border-color:var(--blue);box-shadow:0 12px 30px rgba(22,35,63,.20)}
     .qb-ic{font-size:2.5rem;line-height:1}
     .qb-txt{font-family:var(--display);font-weight:800;font-size:1.4rem;line-height:1.15}
     .qb-go{font-family:var(--display);font-weight:600;font-size:1.02rem;color:var(--blue)}
