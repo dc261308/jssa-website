@@ -54,10 +54,26 @@ def _worksheet():
     sh = gc.open_by_key(SHEET_ID)
     try:
         ws = sh.worksheet(NOTICES_TAB)
+        _ensure_headers(ws, HEADERS)
     except gspread.WorksheetNotFound:
         ws = sh.add_worksheet(title=NOTICES_TAB, rows=200, cols=len(HEADERS))
         ws.update([HEADERS], "A1")
     return ws
+
+
+def _ensure_headers(ws, headers):
+    """Make sure the sheet's header row contains every column we expect.
+    Any missing columns (e.g. a newly added 'url') are appended on the end so
+    older sheets keep working without manual editing."""
+    try:
+        existing = ws.row_values(1)
+    except Exception:
+        existing = []
+    missing = [h for h in headers if h not in existing]
+    if not existing:
+        ws.update([headers], "A1")
+    elif missing:
+        ws.update([existing + missing], "A1")
 
 
 def _is_true(value):
