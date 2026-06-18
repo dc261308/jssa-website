@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hero image preview — JSSA</title>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy:#16233f;--blue:#2b5bd0;--red:#d8262b;
+    --display:'Archivo',system-ui,sans-serif;--body:'Inter',system-ui,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:var(--body);background:#eef1f6;color:#16233f}
+  .label{max-width:1080px;margin:26px auto 8px;padding:0 24px;font-family:var(--display);
+    font-weight:800;font-size:1.15rem;color:#16233f}
+  .note{max-width:1080px;margin:0 auto 12px;padding:0 24px;color:#505b72;font-size:.98rem}
+
+  /* ---- Shared hero look (matches the live site) ---- */
+  .hero{position:relative;overflow:hidden;color:#fff;max-width:1080px;margin:0 auto;border-radius:14px;
+    background:linear-gradient(140deg,#0d1a33 0%,#16233f 52%,#1d3157 100%)}
+  .hero .wrap{position:relative;z-index:2;padding:52px 30px 50px;max-width:760px}
+  .eyebrow{display:inline-flex;align-items:center;gap:9px;font-family:var(--display);font-weight:700;
+    font-size:.8rem;letter-spacing:.12em;text-transform:uppercase;color:#9fc0ff}
+  .eyebrow::before{content:"";width:22px;height:2px;background:#9fc0ff;border-radius:2px}
+  h1{font-family:var(--display);font-weight:800;font-size:clamp(2.2rem,5vw,3.3rem);color:#fff;
+    margin:12px 0 0;letter-spacing:.01em;text-transform:uppercase;line-height:1.06}
+  .welcome{display:block;font-family:var(--display);font-size:.34em;font-weight:700;
+    color:#cfe0ff;margin-bottom:7px;text-transform:none}
+  .lede{font-size:1.5rem;color:#cbd6ee;margin-top:14px;max-width:62ch;line-height:1.4}
+  .btn{display:inline-block;margin-top:22px;font-family:var(--display);font-weight:700;
+    background:var(--red);color:#fff;padding:14px 24px;border-radius:11px;text-decoration:none;font-size:1.05rem}
+
+  /* ---- The softball graphic ---- */
+  .ball{position:absolute;pointer-events:none;z-index:1}
+
+  /* Option A: clean oversized softball bleeding off the right edge */
+  .heroA .ball{right:-70px;top:50%;transform:translateY(-50%);width:380px;opacity:.95;
+    filter:drop-shadow(0 18px 30px rgba(0,0,0,.35))}
+
+  /* Option B: faint watermark softball baked into the background */
+  .heroB .ball{right:-90px;top:50%;transform:translateY(-50%);width:460px;opacity:.10}
+
+  /* Option C: softball with a motion arc (the "moving" idea) */
+  .heroC .ball{right:-40px;top:46%;transform:translateY(-50%) rotate(-18deg);width:300px;opacity:.95;
+    filter:drop-shadow(0 16px 26px rgba(0,0,0,.35))}
+  .heroC .trail{position:absolute;right:120px;top:50%;transform:translateY(-50%);z-index:1;
+    width:520px;opacity:.5;pointer-events:none}
+
+  @media(max-width:720px){.hero .wrap{max-width:100%}.ball,.trail{opacity:.08 !important}}
+</style>
+</head>
+<body>
+
+{% macro softball() %}
+<svg class="ball" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+  <defs>
+    <radialGradient id="sb" cx="38%" cy="32%" r="75%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="60%" stop-color="#f3efe0"/>
+      <stop offset="100%" stop-color="#ddd6bf"/>
+    </radialGradient>
+  </defs>
+  <circle cx="100" cy="100" r="96" fill="url(#sb)"/>
+  <path d="M40 26 C92 70 92 130 40 174" fill="none" stroke="#c8312f" stroke-width="3.2"/>
+  <path d="M160 26 C108 70 108 130 160 174" fill="none" stroke="#c8312f" stroke-width="3.2"/>
+  {% for y in range(38, 170, 16) %}
+  <g stroke="#c8312f" stroke-width="2.4" stroke-linecap="round">
+    <line x1="{{ 52 + (8 if (y//16)%2 else 0) }}" y1="{{ y }}" x2="{{ 64 + (8 if (y//16)%2 else 0) }}" y2="{{ y-5 }}"/>
+    <line x1="{{ 148 - (8 if (y//16)%2 else 0) }}" y1="{{ y }}" x2="{{ 136 - (8 if (y//16)%2 else 0) }}" y2="{{ y-5 }}"/>
+  </g>
+  {% endfor %}
+</svg>
+{% endmacro %}
+
+<div class="label">Option A — Clean oversized softball (off the right edge)</div>
+<div class="note">A crisp softball as a design element, partly bleeding off the edge. Adds interest, stays calm.</div>
+<section class="hero heroA">
+  {{ softball() }}
+  <div class="wrap">
+    <span class="eyebrow">Jupiter, Florida · Players 55 &amp; Over</span>
+    <h1><span class="welcome">Welcome to the home of</span>Jupiter Senior Softball</h1>
+    <p class="lede"><strong>Monday, Wednesday &amp; Friday</strong> at Jupiter Community Park</p>
+    <a class="btn" href="#">Sign up to play &rarr;</a>
+  </div>
+</section>
+
+<div class="label">Option B — Faint watermark softball</div>
+<div class="note">A large, very subtle softball baked into the background. The safest, most timeless look.</div>
+<section class="hero heroB">
+  {{ softball() }}
+  <div class="wrap">
+    <span class="eyebrow">Jupiter, Florida · Players 55 &amp; Over</span>
+    <h1><span class="welcome">Welcome to the home of</span>Jupiter Senior Softball</h1>
+    <p class="lede"><strong>Monday, Wednesday &amp; Friday</strong> at Jupiter Community Park</p>
+    <a class="btn" href="#">Sign up to play &rarr;</a>
+  </div>
+</section>
+
+<div class="label">Option C — Softball with a motion arc (the "moving" idea)</div>
+<div class="note">The ball with a soft dotted arc behind it, like it was just hit. A touch of life without being cartoonish.</div>
+<section class="hero heroC">
+  <svg class="trail" viewBox="0 0 520 200" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <path d="M10 180 Q230 -40 500 90" fill="none" stroke="#9fc0ff" stroke-width="4"
+      stroke-linecap="round" stroke-dasharray="2 16"/>
+  </svg>
+  {{ softball() }}
+  <div class="wrap">
+    <span class="eyebrow">Jupiter, Florida · Players 55 &amp; Over</span>
+    <h1><span class="welcome">Welcome to the home of</span>Jupiter Senior Softball</h1>
+    <p class="lede"><strong>Monday, Wednesday &amp; Friday</strong> at Jupiter Community Park</p>
+    <a class="btn" href="#">Sign up to play &rarr;</a>
+  </div>
+</section>
+
+<div style="height:40px"></div>
+</body>
+</html>
