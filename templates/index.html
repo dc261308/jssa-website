@@ -451,6 +451,49 @@
 })();
 </script>
 
+<!-- ============ QUICK ACTIONS ============ -->
+<!-- Three big, obvious buttons for the most common visits. Easy to revert:
+     delete this whole section (down to its closing </section>) to remove it. -->
+<section class="quickbar" aria-label="Quick actions">
+  <style>
+    .quickbar{padding:30px 0 8px}
+    .qb-title{text-align:center;font-size:1.55rem;color:var(--navy);margin:0 0 20px}
+    .qb-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+    .qb-btn{display:flex;flex-direction:column;align-items:center;text-align:center;gap:8px;
+      min-height:150px;justify-content:center;padding:24px 18px;border-radius:18px;
+      background:var(--surface);border:2px solid var(--line);box-shadow:var(--shadow);
+      color:var(--navy);transition:transform .08s,border-color .15s,box-shadow .15s}
+    .qb-btn:hover{transform:translateY(-3px);border-color:var(--blue);box-shadow:0 10px 26px rgba(22,35,63,.16)}
+    .qb-ic{font-size:2.5rem;line-height:1}
+    .qb-txt{font-family:var(--display);font-weight:800;font-size:1.4rem;line-height:1.15}
+    .qb-go{font-family:var(--display);font-weight:600;font-size:1.02rem;color:var(--blue)}
+    .qb-btn.pickup{background:var(--red);border-color:var(--red);color:#fff}
+    .qb-btn.pickup .qb-go{color:#fff;opacity:.92}
+    .qb-btn.pickup:hover{border-color:var(--navy)}
+    @media(max-width:760px){.qb-grid{grid-template-columns:1fr}}
+  </style>
+  <div class="wrap">
+    <h2 class="qb-title">What do you need today?</h2>
+    <div class="qb-grid">
+      <a class="qb-btn pickup" href="https://script.google.com/macros/s/AKfycbzLLz9E-qjJwXbgAkaGjhH0PT_3oa13uzrl9T5dT1omGCL6Ocw1lYELg8xFBM7zuapN7g/exec">
+        <span class="qb-ic">🥎</span>
+        <span class="qb-txt">Sign Up for Pickup</span>
+        <span class="qb-go">Get in the next game →</span>
+      </a>
+      <a class="qb-btn" href="/league/schedules">
+        <span class="qb-ic">📅</span>
+        <span class="qb-txt">Game Schedule</span>
+        <span class="qb-go">See the dates →</span>
+      </a>
+      <a class="qb-btn" href="/league/standings">
+        <span class="qb-ic">🏆</span>
+        <span class="qb-txt">Standings</span>
+        <span class="qb-go">See the rankings →</span>
+      </a>
+    </div>
+  </div>
+</section>
+
 <!-- ============ GET IN THE GAME ============ -->
 <section class="block" id="getin">
   <div class="wrap">
