@@ -19,10 +19,12 @@
   .tcard ol{list-style:none;padding:0 18px 16px;margin:0}
   .tcard li{padding:7px 0;border-top:1px solid var(--line);font-size:1.05rem;color:var(--navy)}
 </style>
+{% set picker_label = 'rosters' %}
+{% include "_divpicker.html" %}
 {% for div in ['RED','WHITE','BLUE'] %}
   {% set teams = season.rosters[div] %}
   {% if teams %}
-  <div class="divwrap">
+  <div class="divwrap" data-div="{{ div }}">
     <div class="divhead {{ div }}">{{ div }} DIVISION</div>
     <div class="teamgrid">
       {% for t in teams %}

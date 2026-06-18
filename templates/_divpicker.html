@@ -1,0 +1,45 @@
+{# Division picker — shared by the league pages. Requires the visitor to choose
+   RED / WHITE / BLUE (or All) before any content shows. Filters every element
+   tagged with data-div="RED|WHITE|BLUE" right in the browser, no reload.
+   Set {% set picker_label = 'schedule' %} before including for nicer wording. #}
+<style>
+  .divpick{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;margin:0 0 24px}
+  .divpick button{font-family:var(--display);font-weight:800;font-size:1.15rem;letter-spacing:.04em;
+    color:#fff;border:3px solid transparent;border-radius:12px;padding:16px 30px;cursor:pointer;
+    min-width:128px;opacity:.5;transition:opacity .15s,transform .1s}
+  .divpick button:hover{opacity:.9;transform:translateY(-2px)}
+  .divpick button.on{opacity:1;box-shadow:0 5px 18px rgba(22,35,63,.2)}
+  .divpick .RED{background:var(--red)}
+  .divpick .BLUE{background:var(--blue)}
+  .divpick .WHITE{background:#fff;color:var(--navy);border-color:var(--navy)}
+  .divpick .ALL{background:#5a6b88}
+  .divprompt{text-align:center;color:var(--muted);font-family:var(--display);font-weight:600;
+    font-size:1.18rem;padding:34px 12px;border:2px dashed var(--line);border-radius:14px}
+</style>
+<div class="divpick" role="group" aria-label="Choose a division">
+  <button type="button" class="RED"   data-pick="RED">RED</button>
+  <button type="button" class="WHITE" data-pick="WHITE">WHITE</button>
+  <button type="button" class="BLUE"  data-pick="BLUE">BLUE</button>
+  <button type="button" class="ALL"   data-pick="ALL">All</button>
+</div>
+<div class="divprompt" id="divprompt">👆 Pick a division above to see the {{ picker_label|default('information') }}.</div>
+<script>
+(function(){
+  var items=document.querySelectorAll('[data-div]');
+  var btns=document.querySelectorAll('.divpick button');
+  var prompt=document.getElementById('divprompt');
+  function apply(pick){
+    var anyShown=false;
+    items.forEach(function(el){
+      var show=(pick==='ALL'||el.getAttribute('data-div')===pick);
+      el.style.display=show?'':'none';
+      if(show)anyShown=true;
+    });
+    btns.forEach(function(b){b.classList.toggle('on',b.getAttribute('data-pick')===pick);});
+    if(prompt)prompt.style.display=anyShown?'none':'block';
+  }
+  btns.forEach(function(b){b.addEventListener('click',function(){apply(b.getAttribute('data-pick'));});});
+  // Start with nothing shown until the visitor picks a division.
+  items.forEach(function(el){el.style.display='none';});
+})();
+</script>

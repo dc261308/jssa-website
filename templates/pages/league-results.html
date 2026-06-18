@@ -19,10 +19,12 @@
   .rsc{font-family:var(--display);font-weight:800;font-size:1.35rem}
   .rresult{margin-top:8px;font-size:.95rem;color:#1c8a44;font-weight:700}
 </style>
+{% set picker_label = 'results' %}
+{% include "_divpicker.html" %}
 <div class="res">
   {% for g in season.results|reverse %}
   {% set hs = g.home_score|int(-1) %}{% set as = g.away_score|int(-1) %}
-  <div class="rcard {{ g.division }}">
+  <div class="rcard {{ g.division }}" data-div="{{ g.division }}">
     <div class="rtop">
       <span class="rwhen">{{ g.date }}{% if g.time %} · {{ g.time }}{% endif %}</span>
       <span class="rfield">{{ g.field }}</span>

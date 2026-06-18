@@ -22,10 +22,12 @@
   .gstatus.final{background:#e9f7ee;color:#1c8a44}
   @media(max-width:560px){.gright{text-align:left;width:100%}}
 </style>
+{% set picker_label = 'schedule' %}
+{% include "_divpicker.html" %}
 <div class="sch">
   {% for g in season.schedule %}
   {% set final = g.score_home != '' and g.score_away != '' %}
-  <div class="gcard {{ g.division }}">
+  <div class="gcard {{ g.division }}" data-div="{{ g.division }}">
     <div class="gwhen">
       <div class="d">{{ g.date }}</div>
       <div class="t">{{ g.time }}{% if g.field %} · {{ g.field }}{% endif %}</div>

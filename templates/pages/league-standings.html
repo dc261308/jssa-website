@@ -19,10 +19,12 @@
   .pos{color:var(--blue);font-weight:700} .neg{color:var(--red);font-weight:700}
   @media(max-width:560px){.stbl{font-size:.95rem}.stbl th,.stbl td{padding:10px 6px}}
 </style>
+{% set picker_label = 'standings' %}
+{% include "_divpicker.html" %}
 {% for div in ['RED','WHITE','BLUE'] %}
   {% set teams = season.standings[div] %}
   {% if teams %}
-  <div class="divwrap">
+  <div class="divwrap" data-div="{{ div }}">
     <div class="divhead {{ div }}">{{ div }} DIVISION</div>
     <table class="stbl">
       <thead>
