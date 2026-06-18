@@ -1,0 +1,25 @@
+{% extends "page_base.html" %}
+{% block eyebrow %}{{ section_eyebrow }}{% endblock %}
+{% block sub %}<p class="sub">Part of the Jupiter Senior Softball organized league season.</p>{% endblock %}
+{% block body %}
+<style>
+  .season{max-width:640px;margin:6px auto 0;text-align:center}
+  .season .emoji{font-size:3rem;line-height:1;margin-bottom:14px}
+  .season h2{font-size:1.55rem;color:var(--navy);margin-bottom:12px}
+  .season p{font-size:1.12rem;color:var(--text);margin:0 auto 14px;max-width:52ch}
+  .season .pill{display:inline-block;margin-top:6px;background:var(--blue-tint);color:var(--navy);
+    font-family:var(--display);font-weight:700;font-size:.98rem;padding:10px 18px;border-radius:999px}
+</style>
+
+<div class="season">
+  <div class="emoji">⚾</div>
+  <h2>This section opens for the league season</h2>
+  <p>Our organized league runs from <strong>mid-October through the end of March</strong>.
+     During the season, this page fills in automatically from the league's records.</p>
+  <p>Right now it's the off-season, so there's nothing to show yet —
+     please check back when league play begins.</p>
+  <span class="pill">Season: October – March</span>
+</div>
+{% endblock %}
+{% block footer_btns %}<a class="btn btn-navy" href="/">← Back to Home</a>{% endblock %}
+{% block extra_btns %}{% endblock %}
