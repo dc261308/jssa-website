@@ -224,9 +224,10 @@ def admin_add():
     ntype = request.form.get("type", "announcement")
     message = request.form.get("message", "").strip()
     created_by = request.form.get("created_by", "").strip()
+    url = request.form.get("url", "").strip()
     if message:
         try:
-            sheets.add_notice(ntype, message, created_by)
+            sheets.add_notice(ntype, message, created_by, url)
         except Exception:
             pass
     return redirect(url_for("admin_dashboard"))

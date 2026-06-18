@@ -381,14 +381,16 @@
     return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
   var closeBtn = '<button class="close" aria-label="Dismiss">&times;</button>';
   if (n && n.message){
+    var msgHtml = esc(n.message);
+    if (n.url) msgHtml = '<a href="'+esc(n.url)+'" style="color:inherit;text-decoration:underline;text-underline-offset:3px" target="_blank" rel="noopener">'+msgHtml+'</a>';
     if (n.type === 'weather'){
       cls = 'is-weather';
       inner = '<span class="stripe"></span><div class="bwrap"><span class="icon">⚠️</span>'+
-        '<span class="btext"><span class="tag">Game-Day Update</span>'+esc(n.message)+'</span>'+closeBtn+'</div>';
+        '<span class="btext"><span class="tag">Game-Day Update</span>'+msgHtml+'</span>'+closeBtn+'</div>';
     } else {
       cls = 'is-note';
       inner = '<div class="bwrap"><span class="icon">📣</span>'+
-        '<span class="btext"><span class="tag">Announcement</span>'+esc(n.message)+'</span>'+closeBtn+'</div>';
+        '<span class="btext"><span class="tag">Announcement</span>'+msgHtml+'</span>'+closeBtn+'</div>';
     }
   } else if (teams){
     cls = 'is-teams';
