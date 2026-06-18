@@ -308,71 +308,7 @@
   <svg class="trail" viewBox="0 0 520 200" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
     <path d="M6 186 Q240 -50 512 70" fill="none" stroke="#9fc0ff" stroke-width="4.5" stroke-linecap="round" stroke-dasharray="2 17"/>
   </svg>
-  <svg class="ball" viewBox="0 0 220 220" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-    <defs>
-      <!-- Deep base shadow around the edge -->
-      <radialGradient id="base" cx="50%" cy="50%" r="50%">
-        <stop offset="0%" stop-color="#c8df20"/>
-        <stop offset="72%" stop-color="#a8c418"/>
-        <stop offset="90%" stop-color="#7a960f"/>
-        <stop offset="100%" stop-color="#4e6008"/>
-      </radialGradient>
-      <!-- Primary lighting gradient (top-left light source) -->
-      <radialGradient id="light" cx="35%" cy="28%" r="55%">
-        <stop offset="0%" stop-color="#eef97a" stop-opacity="1"/>
-        <stop offset="40%" stop-color="#d4e930" stop-opacity=".9"/>
-        <stop offset="75%" stop-color="#9ab818" stop-opacity=".7"/>
-        <stop offset="100%" stop-color="#4e6008" stop-opacity=".0"/>
-      </radialGradient>
-      <!-- Specular (glossy) highlight -->
-      <radialGradient id="spec" cx="32%" cy="24%" r="26%">
-        <stop offset="0%" stop-color="#ffffff" stop-opacity=".82"/>
-        <stop offset="55%" stop-color="#ffffff" stop-opacity=".22"/>
-        <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
-      </radialGradient>
-      <!-- Bottom-right shadow -->
-      <radialGradient id="shadow" cx="70%" cy="76%" r="50%">
-        <stop offset="0%" stop-color="#1a2500" stop-opacity=".55"/>
-        <stop offset="100%" stop-color="#1a2500" stop-opacity="0"/>
-      </radialGradient>
-      <!-- Drop shadow filter -->
-      <filter id="dropshadow" x="-15%" y="-10%" width="140%" height="140%">
-        <feDropShadow dx="6" dy="12" stdDeviation="14" flood-color="#000" flood-opacity=".38"/>
-      </filter>
-      <!-- Seam glow filter -->
-      <filter id="seamglow" x="-5%" y="-5%" width="110%" height="110%">
-        <feGaussianBlur stdDeviation="1.2" result="blur"/>
-        <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
-      </filter>
-    </defs>
-
-    <!-- Ball body layers -->
-    <circle cx="110" cy="110" r="104" fill="url(#base)" filter="url(#dropshadow)"/>
-    <circle cx="110" cy="110" r="104" fill="url(#light)"/>
-    <circle cx="110" cy="110" r="104" fill="url(#shadow)"/>
-    <circle cx="110" cy="110" r="104" fill="url(#spec)"/>
-    <!-- Thin rim for definition -->
-    <circle cx="110" cy="110" r="103.5" fill="none" stroke="#3a5008" stroke-width="1.5" opacity=".6"/>
-
-    <!-- Seam curves — figure-8 pattern typical of a softball -->
-    <!-- Left seam -->
-    <path d="M52 34 C110 80 110 140 52 186" fill="none" stroke="#c01820" stroke-width="4" stroke-linecap="round" filter="url(#seamglow)" opacity=".95"/>
-    <!-- Right seam -->
-    <path d="M168 34 C110 80 110 140 168 186" fill="none" stroke="#c01820" stroke-width="4" stroke-linecap="round" filter="url(#seamglow)" opacity=".95"/>
-
-    <!-- Stitches along left seam -->
-    <g stroke="#e8242c" stroke-width="2.8" stroke-linecap="round" opacity=".9">
-      <line x1="63" y1="47" x2="75" y2="41"/>  <line x1="157" y1="47" x2="145" y2="41"/>
-      <line x1="69" y1="62" x2="81" y2="57"/>  <line x1="151" y1="62" x2="139" y2="57"/>
-      <line x1="62" y1="78" x2="74" y2="73"/>  <line x1="158" y1="78" x2="146" y2="73"/>
-      <line x1="68" y1="94" x2="80" y2="89"/>  <line x1="152" y1="94" x2="140" y2="89"/>
-      <line x1="62" y1="110" x2="74" y2="105"/> <line x1="158" y1="110" x2="146" y2="105"/>
-      <line x1="68" y1="126" x2="80" y2="121"/> <line x1="152" y1="126" x2="140" y2="121"/>
-      <line x1="62" y1="142" x2="74" y2="137"/> <line x1="158" y1="142" x2="146" y2="137"/>
-      <line x1="68" y1="158" x2="80" y2="153"/> <line x1="152" y1="158" x2="140" y2="153"/>
-      <line x1="63" y1="173" x2="75" y2="168"/> <line x1="157" y1="173" x2="145" y2="168"/>
-    </g>
-  </svg>
+  <img class="ball" src="{{ url_for('static', filename='softball-hero.png') }}" alt="Softball" width="680" height="680">
   <div class="wrap">
     <span class="eyebrow">Jupiter, Florida · Players 55 &amp; Over</span>
     <h1><span class="welcome">Welcome to the home of</span>Jupiter Senior Softball</h1>
