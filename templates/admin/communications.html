@@ -66,14 +66,18 @@
   </div>
 
   <div class="comm-btns">
-    <a class="cbtn primary" id="commOpen" href="#">✉️ Open my email app</a>
+    <a class="cbtn primary" id="commOpen" href="#" target="_blank" rel="noopener">✉️ Compose in league Gmail</a>
     <button class="cbtn copy" id="commCopy" type="button">📋 Copy email addresses</button>
   </div>
 
   <div class="tip">
-    <strong>About 100 emails a day is the limit.</strong> If a group is larger, send it over two days
-    (for example, split a big list, or do one division per day). Members are added as <strong>BCC</strong>
-    so no one sees everyone else's address.
+    <strong>Emails are sent from the league account</strong> (<span id="fromAddr"></span>), not your
+    personal email. The button opens Gmail's compose window for that account &mdash; just make sure you're
+    <strong>signed in to the league account</strong> in this browser. Members are added as <strong>BCC</strong>
+    so no one sees anyone else's address.
+    <br><br>
+    <strong>About 100 emails a day is Gmail's limit.</strong> If a group is larger, send it over two days
+    (for example, one division per day).
   </div>
 
   <div class="missing" id="commMissing" style="display:none"></div>
@@ -88,6 +92,9 @@
 (function(){
   var data = {all:[], divisions:{RED:[],WHITE:[],BLUE:[]}, board:[]};
   try { data = JSON.parse(document.getElementById('comm-data').textContent); } catch(e){}
+
+  // The league account to send FROM. To change it later, edit this one line.
+  var LEAGUE_FROM = 'jssagames@gmail.com';
 
   var titles = {all:'All Members', RED:'RED Division', WHITE:'WHITE Division',
                 BLUE:'BLUE Division', board:'Board of Directors'};
@@ -108,16 +115,21 @@
   var names  = document.getElementById('commNames');
   var miss   = document.getElementById('commMissing');
   var current = [];
+  var fromSpan = document.getElementById('fromAddr');
+  if(fromSpan) fromSpan.textContent = LEAGUE_FROM;
 
   function emailsOf(people){
     return people.filter(function(p){return p.email;}).map(function(p){return p.email;});
   }
 
   function buildMailto(){
+    // Open Gmail's compose window for the league account (authuser pins the
+    // "from" address to the league, not the person's personal Gmail).
     var addrs = emailsOf(current).join(',');
-    var url = 'mailto:?bcc=' + encodeURIComponent(addrs);
+    var url = 'https://mail.google.com/mail/?authuser=' + encodeURIComponent(LEAGUE_FROM) +
+              '&view=cm&fs=1&tf=1&bcc=' + encodeURIComponent(addrs);
     var s = subj.value.trim();
-    if(s) url += '&subject=' + encodeURIComponent(s);
+    if(s) url += '&su=' + encodeURIComponent(s);
     openA.setAttribute('href', url);
   }
 
