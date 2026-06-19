@@ -189,6 +189,13 @@
   .board-note{color:#9fc0ff;font-size:.9rem;margin:16px 0 0;text-align:center}
   .board-note a{color:#cfe0ff;font-weight:700}
   @media(max-width:560px){.btable .hide-sm{display:none}.btable td,.btable th{padding-left:5px;padding-right:5px;font-size:.98rem}}
+  .insights{margin-top:30px}
+  .insights-head{font-family:var(--display);font-weight:800;color:#fff;font-size:1.18rem;margin:0 0 14px;display:flex;align-items:center;gap:9px}
+  .igrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px}
+  .icard{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);border-radius:14px;padding:16px 18px}
+  .icard .ival{font-family:var(--display);font-weight:800;color:#fff;font-size:1.7rem;line-height:1.1}
+  .icard .ilab{color:#9fc0ff;font-size:.92rem;margin-top:5px;font-weight:600}
+  .icard.wide .ival{font-size:1.18rem}
   .lb{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);border-radius:var(--radius);overflow:hidden}
   .lb .lbhead{display:flex;align-items:center;justify-content:space-between;padding:16px 22px;border-bottom:1px solid rgba(255,255,255,.12)}
   .lb .lbhead h3{color:#fff;font-size:1.15rem}
@@ -534,6 +541,32 @@
         </tbody>
       </table>
       <p class="board-note">Showing the top {{ pred_board|length }}. <a href="https://script.google.com/macros/s/AKfycbwqXbN6B6WNa7Dye3NJcUWzmNrMETCZWjW2F8JrjmhKb7F3idebOxiBeRm1Fpzpx1ij/exec?view=prediction_leaderboard" target="_blank" rel="noopener">See the full leaderboard →</a></p>
+    </div>
+    {% endif %}
+
+    {% if pred_stats %}
+    <div class="insights">
+      <div class="insights-head">📈 Season insights</div>
+      <div class="igrid">
+        {% if pred_stats.get('total games scored') %}
+        <div class="icard"><div class="ival">{{ pred_stats['total games scored'].value }}</div><div class="ilab">Games scored</div></div>
+        {% endif %}
+        {% if pred_stats.get('total predictions') %}
+        <div class="icard"><div class="ival">{{ pred_stats['total predictions'].value }}</div><div class="ilab">Total picks made</div></div>
+        {% endif %}
+        {% if pred_stats.get('league prediction accuracy %') %}
+        <div class="icard"><div class="ival">{{ pred_stats['league prediction accuracy %'].value }}</div><div class="ilab">League accuracy</div></div>
+        {% endif %}
+        {% if pred_stats.get('upset rate %') %}
+        <div class="icard"><div class="ival">{{ pred_stats['upset rate %'].value }}</div><div class="ilab">Upset rate</div></div>
+        {% endif %}
+        {% if pred_stats.get('most trusted captain') %}
+        <div class="icard wide"><div class="ival">{{ pred_stats['most trusted captain'].value }}</div><div class="ilab">Most-trusted captain</div></div>
+        {% endif %}
+        {% if pred_stats.get('most underrated captain') %}
+        <div class="icard wide"><div class="ival">{{ pred_stats['most underrated captain'].value }}</div><div class="ilab">Most underrated captain</div></div>
+        {% endif %}
+      </div>
     </div>
     {% endif %}
   </div>

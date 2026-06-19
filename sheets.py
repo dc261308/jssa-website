@@ -1816,6 +1816,49 @@ def prediction_leaderboard(limit=10):
     return out[:limit] if limit else out
 
 
+# Prediction analytics for the homepage — the season insight numbers the
+# Control Sheet already computes on its "Prediction Analytics" tab (a simple
+# Metric / Value / Notes list: total games, league accuracy, most-trusted
+# captain, biggest upset, etc.). We return it as {metric: {value, note}} so the
+# homepage can pull out just the few stats it wants to show.
+_pred_stats_cache = {"data": None, "ts": 0.0}
+_PRED_STATS_TTL = 120  # 2 minutes
+
+
+def prediction_analytics():
+    """Season insight numbers keyed by metric name (lowercased):
+        {'total games scored': {'value': '15', 'note': '...'}, ...}
+    Returns {} if the tab isn't set up or the API hiccups."""
+    now = time.time()
+    with _lock:
+        c = _pred_stats_cache
+        if c["data"] is not None and now - c["ts"] < _PRED_STATS_TTL:
+            return c["data"]
+    out = {}
+    try:
+        if CONTROL_SHEET_ID and _SA_JSON:
+            sh = _control_sheet(readonly=True)
+            tabs = _control_tabs(sh)
+            _, rows, hi, cols = _match_tab(tabs, ["metric", "value"])
+            if rows is not None:
+                reader = _row_reader(cols)
+                for r in rows[hi + 1:]:
+                    g = reader(r)
+                    metric = g("metric")
+                    if not metric:
+                        continue
+                    out[metric.strip().lower()] = {
+                        "value": g("value"),
+                        "note": g("note", "notes"),
+                    }
+    except Exception:
+        out = {}
+    with _lock:
+        _pred_stats_cache["data"] = out
+        _pred_stats_cache["ts"] = now
+    return out
+
+
 # ----------------------------------------------------------------------------
 # Sponsors — admin-managed, seeded with the current sponsor list
 # ----------------------------------------------------------------------------
