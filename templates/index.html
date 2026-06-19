@@ -174,6 +174,21 @@
   .obar:last-child{margin-bottom:0}
   .onopicks{color:#cbd6ee;font-size:.98rem;padding:4px 0 2px}
   .odds-note{color:#9fc0ff;font-size:.9rem;margin:16px 0 0;text-align:center}
+  .board{margin-top:30px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);border-radius:16px;padding:22px 22px 18px}
+  .board-head{font-family:var(--display);font-weight:800;color:#fff;font-size:1.18rem;margin:0 0 4px;display:flex;align-items:center;gap:9px}
+  .board-sub{color:#9fc0ff;font-size:.95rem;margin:0 0 16px}
+  .btable{width:100%;border-collapse:collapse}
+  .btable th{text-align:left;font-family:var(--display);font-weight:700;color:#9fc0ff;font-size:.82rem;text-transform:uppercase;letter-spacing:.03em;padding:0 8px 10px;border-bottom:1px solid rgba(255,255,255,.14)}
+  .btable th.num,.btable td.num{text-align:right}
+  .btable td{padding:13px 8px;color:#eaf1ff;font-size:1.05rem;border-bottom:1px solid rgba(255,255,255,.08)}
+  .btable tr:last-child td{border-bottom:none}
+  .btable td.bname{font-weight:700;color:#fff}
+  .btable td.brank{color:#9fc0ff;font-weight:800;font-family:var(--display);width:2.2em}
+  .btable tr.me td{background:rgba(43,91,208,.18)}
+  .btable td.bpts{font-weight:800;color:#fff}
+  .board-note{color:#9fc0ff;font-size:.9rem;margin:16px 0 0;text-align:center}
+  .board-note a{color:#cfe0ff;font-weight:700}
+  @media(max-width:560px){.btable .hide-sm{display:none}.btable td,.btable th{padding-left:5px;padding-right:5px;font-size:.98rem}}
   .lb{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);border-radius:var(--radius);overflow:hidden}
   .lb .lbhead{display:flex;align-items:center;justify-content:space-between;padding:16px 22px;border-bottom:1px solid rgba(255,255,255,.12)}
   .lb .lbhead h3{color:#fff;font-size:1.15rem}
@@ -487,6 +502,38 @@
       </div>
       {% endfor %}
       <p class="odds-note">These are the crowd's picks, not a guarantee — make your own call above!</p>
+    </div>
+    {% endif %}
+
+    {% if pred_board %}
+    <div class="board">
+      <div class="board-head">🏆 Leaderboard — this season's top predictors</div>
+      <p class="board-sub">Most correct picks against the real results. Updates after every game day.</p>
+      <table class="btable">
+        <thead>
+          <tr>
+            <th class="brank">#</th>
+            <th>Player</th>
+            <th class="num hide-sm">Picks</th>
+            <th class="num">Correct</th>
+            <th class="num">Points</th>
+            <th class="num hide-sm">Accuracy</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for p in pred_board %}
+          <tr{% if p.name|lower == 'tom cosentino' %} class="me"{% endif %}>
+            <td class="brank">{{ p.rank or loop.index }}</td>
+            <td class="bname">{{ p.name }}</td>
+            <td class="num hide-sm">{{ p.predictions }}</td>
+            <td class="num">{{ p.correct }}</td>
+            <td class="num bpts">{{ p.points }}</td>
+            <td class="num hide-sm">{{ p.accuracy }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      <p class="board-note">Showing the top {{ pred_board|length }}. <a href="https://script.google.com/macros/s/AKfycbwqXbN6B6WNa7Dye3NJcUWzmNrMETCZWjW2F8JrjmhKb7F3idebOxiBeRm1Fpzpx1ij/exec?view=prediction_leaderboard" target="_blank" rel="noopener">See the full leaderboard →</a></p>
     </div>
     {% endif %}
   </div>

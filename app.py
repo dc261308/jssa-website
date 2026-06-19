@@ -72,10 +72,14 @@ def home():
         pred_odds = sheets.prediction_odds()
     except Exception:
         pred_odds = []
+    try:
+        pred_board = sheets.prediction_leaderboard()
+    except Exception:
+        pred_board = []
     return render_template("index.html", notice=notice,
                            teams_posted=teams_posted, blackboard=blackboard,
                            photos=photos, board=board, sponsors=sponsor_list,
-                           pred_odds=pred_odds)
+                           pred_odds=pred_odds, pred_board=pred_board)
 
 
 @app.route("/teams")

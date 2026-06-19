@@ -1766,6 +1766,56 @@ def prediction_odds():
     return out
 
 
+# Prediction leaderboard for the homepage — the season standings the Control
+# Sheet already computes on its "JSSA Leaderboard" tab (Rank, Player Name,
+# Player Email, Predictions, Correct, Incorrect, Points, Accuracy %, Qualified).
+# We read it straight through so the standings can live on the site itself
+# instead of only behind the external Apps Script link. We deliberately never
+# return the Player Email column — only the public standings.
+_pred_board_cache = {"data": None, "ts": 0.0}
+_PRED_BOARD_TTL = 120  # 2 minutes
+
+
+def prediction_leaderboard(limit=10):
+    """Top predictors from the Control Sheet's leaderboard tab:
+        [{rank, name, predictions, correct, points, accuracy}]
+    Sorted as the sheet ranks them, capped at `limit`. Returns [] if the tab
+    isn't set up or the API hiccups (the homepage then keeps its link)."""
+    now = time.time()
+    with _lock:
+        c = _pred_board_cache
+        if c["data"] is not None and now - c["ts"] < _PRED_BOARD_TTL:
+            return c["data"][:limit] if limit else list(c["data"])
+    out = []
+    try:
+        if CONTROL_SHEET_ID and _SA_JSON:
+            sh = _control_sheet(readonly=True)
+            tabs = _control_tabs(sh)
+            _, rows, hi, cols = _match_tab(
+                tabs, ["player name", "correct", "points"])
+            if rows is not None:
+                reader = _row_reader(cols)
+                for r in rows[hi + 1:]:
+                    g = reader(r)
+                    name = g("player name", "name")
+                    if not name:
+                        continue
+                    out.append({
+                        "rank": g("rank"),
+                        "name": name,
+                        "predictions": g("predictions"),
+                        "correct": g("correct"),
+                        "points": g("points"),
+                        "accuracy": g("accuracy %", "accuracy"),
+                    })
+    except Exception:
+        out = []
+    with _lock:
+        _pred_board_cache["data"] = out
+        _pred_board_cache["ts"] = now
+    return out[:limit] if limit else out
+
+
 # ----------------------------------------------------------------------------
 # Sponsors — admin-managed, seeded with the current sponsor list
 # ----------------------------------------------------------------------------
