@@ -26,6 +26,8 @@ import os
 import hmac
 import functools
 import re
+import threading
+import urllib.request
 
 from flask import (
     Flask, render_template, jsonify, abort,
@@ -294,6 +296,20 @@ def admin_predictions():
                            saved=request.args.get("saved"))
 
 
+_APPS_SCRIPT_SCORE_URL = (
+    "https://script.google.com/macros/s/AKfycbwqXbN6B6WNa7Dye3NJcUWzmNrMETCZWjW2F8Jr"
+    "jmhKb7F3idebOxiBeRm1Fpzpx1ij/exec"
+    "?action=score_predictions&key=JSSA_PREDICTION_SYNC_2026"
+)
+
+
+def _trigger_scoring():
+    try:
+        urllib.request.urlopen(_APPS_SCRIPT_SCORE_URL, timeout=30)
+    except Exception:
+        pass
+
+
 @app.route("/admin/predictions/save", methods=["POST"])
 @login_required
 def admin_predictions_save():
@@ -305,6 +321,8 @@ def admin_predictions_save():
             ok = sheets.set_prediction_winner(int(row), winner)
         except Exception:
             ok = False
+    if ok:
+        threading.Thread(target=_trigger_scoring, daemon=True).start()
     return redirect(url_for("admin_predictions", saved=("1" if ok else "0")))
 
 
