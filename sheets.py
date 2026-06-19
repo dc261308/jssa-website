@@ -1839,7 +1839,9 @@ def prediction_analytics():
         if CONTROL_SHEET_ID and _SA_JSON:
             sh = _control_sheet(readonly=True)
             tabs = _control_tabs(sh)
-            _, rows, hi, cols = _match_tab(tabs, ["metric", "value"])
+            _, rows, hi, cols = _match_tab(tabs, ["metric", "value", "notes"])
+            if rows is None:
+                _, rows, hi, cols = _match_tab(tabs, ["metric", "value"])
             if rows is not None:
                 reader = _row_reader(cols)
                 for r in rows[hi + 1:]:

@@ -73,7 +73,7 @@ def home():
     except Exception:
         pred_odds = []
     try:
-        pred_board = sheets.prediction_leaderboard()
+        pred_board = sheets.prediction_leaderboard(5)
     except Exception:
         pred_board = []
     try:
