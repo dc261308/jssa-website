@@ -1658,10 +1658,31 @@ _pred_odds_cache = {"data": None, "ts": 0.0}
 _PRED_ODDS_TTL = 120  # 2 minutes
 
 
+def _norm_pred_date(s):
+    """Canonicalize a game date to YYYY-MM-DD so the Games tab (which stores
+    dates like '6/19/2026') and the Picks tab (which stores '2026-06-19') line
+    up. Unknown formats are returned trimmed, as-is."""
+    s = (s or "").strip()
+    m = re.match(r"^(\d{4})-(\d{1,2})-(\d{1,2})$", s)
+    if m:
+        return "%04d-%02d-%02d" % (int(m.group(1)), int(m.group(2)), int(m.group(3)))
+    m = re.match(r"^(\d{1,2})/(\d{1,2})/(\d{2,4})$", s)
+    if m:
+        mo, d, y = int(m.group(1)), int(m.group(2)), int(m.group(3))
+        if y < 100:
+            y += 2000
+        return "%04d-%02d-%02d" % (y, mo, d)
+    return s
+
+
 def prediction_odds():
     """Open (not-yet-scored) prediction games for the next game day, with live
     vote percentages: [{date, field, home, away, picks_home, picks_away,
-    total, home_pct, away_pct}]. Returns [] if nothing is open or set up."""
+    total, home_pct, away_pct}]. Returns [] if nothing is open or set up.
+
+    Reads the control sheet directly and joins the Games and Picks tabs on a
+    NORMALIZED (date, field) key, so differing date formats between the two
+    tabs still match."""
     now = time.time()
     with _lock:
         c = _pred_odds_cache
@@ -1669,37 +1690,74 @@ def prediction_odds():
             return c["data"]
     out = []
     try:
-        open_games = []
-        for gm in prediction_games_for_scoring():
-            # "Live" = the result isn't in yet (not scored, no winner recorded).
-            if gm.get("scored") or gm.get("winner"):
-                continue
-            if not (gm.get("home") or gm.get("away")):
-                continue
-            open_games.append(gm)
-        # Keep only the latest game day among the open games, so a stray
-        # un-scored older game can't clutter the panel.
-        if open_games:
-            latest = max((g.get("date") or "") for g in open_games)
-            for gm in open_games:
-                if (gm.get("date") or "") != latest:
-                    continue
-                total = gm.get("picks_total") or 0
-                h = gm.get("picks_home") or 0
-                v = gm.get("picks_away") or 0
-                hp = round(h * 100 / total) if total else None
-                vp = (100 - hp) if hp is not None else None
-                out.append({
-                    "date": gm.get("date"),
-                    "field": gm.get("field"),
-                    "home": gm.get("home"),
-                    "away": gm.get("away"),
-                    "picks_home": h,
-                    "picks_away": v,
-                    "total": total,
-                    "home_pct": hp,
-                    "away_pct": vp,
-                })
+        if CONTROL_SHEET_ID and _SA_JSON:
+            sh = _control_sheet(readonly=True)
+            tabs = _control_tabs(sh)
+
+            # 1) Tally picks per normalized (date, field) from the Picks tab.
+            _, prows, phi, pcols = _match_tab(
+                tabs, ["predicted winner", "game date", "field"])
+            tallies = {}
+            if prows is not None:
+                preader = _row_reader(pcols)
+                for r in prows[phi + 1:]:
+                    g = preader(r)
+                    key = (_norm_pred_date(g("game date")),
+                           g("field").strip().lower())
+                    if not key[0] or not key[1]:
+                        continue
+                    pick = g("predicted winner").upper()[:1]
+                    t = tallies.setdefault(key, {"H": 0, "V": 0, "total": 0})
+                    if pick in ("H", "V"):
+                        t[pick] += 1
+                        t["total"] += 1
+
+            # 2) Read the Games tab, keep only games still open (not scored,
+            #    no winner recorded yet).
+            _, grows, ghi, gcols = _match_tab(
+                tabs, ["home captain", "visitor captain", "winner"])
+            open_games = []
+            if grows is not None:
+                greader = _row_reader(gcols)
+                for r in grows[ghi + 1:]:
+                    g = greader(r)
+                    home = g("home captain")
+                    away = g("visitor captain")
+                    if not (home or away):
+                        continue
+                    if _is_true(g("scored")) or g("winner").strip():
+                        continue
+                    raw = g("game date")
+                    open_games.append({
+                        "date_raw": raw,
+                        "date": _norm_pred_date(raw),
+                        "field": g("field"),
+                        "home": home,
+                        "away": away,
+                    })
+
+            # 3) Keep only the latest open game day, then attach the tallies.
+            if open_games:
+                latest = max(g["date"] for g in open_games)
+                for g in open_games:
+                    if g["date"] != latest:
+                        continue
+                    t = tallies.get((g["date"], g["field"].strip().lower()),
+                                    {"H": 0, "V": 0, "total": 0})
+                    total, h, v = t["total"], t["H"], t["V"]
+                    hp = round(h * 100 / total) if total else None
+                    vp = (100 - hp) if hp is not None else None
+                    out.append({
+                        "date": g["date_raw"],
+                        "field": g["field"],
+                        "home": g["home"],
+                        "away": g["away"],
+                        "picks_home": h,
+                        "picks_away": v,
+                        "total": total,
+                        "home_pct": hp,
+                        "away_pct": vp,
+                    })
     except Exception:
         out = []
     with _lock:
