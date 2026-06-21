@@ -376,25 +376,11 @@
     </div>
     <script>
     (function(){
-      // Show the roster button Sun/Tue/Thu after 3:15 PM Eastern,
-      // hide it again at noon Eastern the following day (Mon/Wed/Fri).
-      // Days: 0=Sun,1=Mon,2=Tue,3=Wed,4=Thu,5=Fri,6=Sat
-      var now = new Date(new Date().toLocaleString('en-US', {timeZone:'America/New_York'}));
-      var day = now.getDay();   // 0-6
-      var min = now.getHours() * 60 + now.getMinutes();  // minutes since midnight
-      var SHOW = 15 * 60 + 15;  // 3:15 PM = 915 min
-      var HIDE = 12 * 60;       // noon   = 720 min
-      var visible = false;
-      // Sun(0) after 3:15 → show; Mon(1) before noon → still show
-      if (day === 0 && min >= SHOW) visible = true;
-      if (day === 1 && min <  HIDE) visible = true;
-      // Tue(2) after 3:15 → show; Wed(3) before noon → still show
-      if (day === 2 && min >= SHOW) visible = true;
-      if (day === 3 && min <  HIDE) visible = true;
-      // Thu(4) after 3:15 → show; Fri(5) before noon → still show
-      if (day === 4 && min >= SHOW) visible = true;
-      if (day === 5 && min <  HIDE) visible = true;
-      if (visible) document.getElementById('rosterBtn').style.display = '';
+      // Show the red button only when the server confirms teams are published.
+      // teams_posted comes from the same jssa-data island used by the top banner.
+      var data = {teams_posted:false};
+      try { data = JSON.parse(document.getElementById('jssa-data').textContent); } catch(e){}
+      if (data.teams_posted) document.getElementById('rosterBtn').style.display = '';
     })();
     </script>
 
@@ -477,7 +463,7 @@
         <span class="qb-txt">Pickup Game Schedule</span>
         <span class="qb-go">See the dates →</span>
       </a>
-      <a class="qb-btn" href="https://docs.google.com/spreadsheets/d/1oHgGae0aXVVsr7t9hmDmoLxZWO5p9rLFPebSsXoFfAA/edit?gid=1483978424#gid=1483978424" target="_blank" rel="noopener">
+      <a class="qb-btn" href="/teams">
         <span class="qb-ic">📋</span>
         <span class="qb-txt">Pickup Game Rosters</span>
         <span class="qb-go">See who's playing →</span>
