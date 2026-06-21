@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <base target="_top">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JSSA Prediction Contest</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800;900&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --navy: #16233f;
+      --navy2: #1e2f52;
+      --blue: #2b5bd0;
+      --gold: #f5c518;
+      --red: #d8262b;
+      --display: 'Archivo', system-ui, sans-serif;
+      --body: 'Inter', system-ui, sans-serif;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 112.5%; -webkit-font-smoothing: antialiased; }
+    body { font-family: var(--body); background: var(--navy); color: #eaf1ff; min-height: 100vh; padding: 0 0 60px; }
+    a { color: #9fc0ff; text-decoration: none; }
+    a:hover { color: #fff; }
+
+    /* Header */
+    .hdr { background: linear-gradient(135deg, #0d1a33 0%, #1a2d55 100%); border-bottom: 1px solid rgba(255,255,255,.1); padding: 28px 24px 24px; }
+    .hdr-inner { max-width: 740px; margin: 0 auto; }
+    .hdr .eyebrow { font-family: var(--display); font-weight: 700; font-size: .78rem; letter-spacing: .14em; text-transform: uppercase; color: #9fc0ff; margin-bottom: 8px; }
+    .hdr h1 { font-family: var(--display); font-weight: 900; font-size: clamp(1.5rem, 4vw, 2.2rem); color: #fff; line-height: 1.1; }
+    .hdr .sub { color: #9fc0ff; font-size: .98rem; margin-top: 8px; }
+
+    /* Wrap */
+    .wrap { max-width: 740px; margin: 0 auto; padding: 0 20px; }
+
+    /* Alert banner */
+    .alert {
+      display: none;
+      position: sticky;
+      top: 0;
+      z-index: 999;
+      padding: 14px 20px;
+      margin: 16px 0;
+      border-radius: 12px;
+      font-family: var(--display);
+      font-weight: 700;
+      font-size: 1rem;
+      text-align: center;
+    }
+    .unsaved { display: block; background: rgba(245,197,24,.15); border: 2px solid rgba(245,197,24,.5); color: var(--gold); }
+    .saving  { display: block; background: rgba(43,91,208,.2);  border: 2px solid rgba(43,91,208,.5);  color: #93c5fd; }
+    .saved   { display: block; background: rgba(34,197,94,.15); border: 2px solid rgba(34,197,94,.4);  color: #4ade80; }
+    .error   { display: block; background: rgba(216,38,43,.15); border: 2px solid rgba(216,38,43,.4);  color: #f87171; }
+
+    /* Intro card */
+    .intro-card {
+      background: rgba(255,255,255,.05);
+      border: 1px solid rgba(255,255,255,.1);
+      border-radius: 16px;
+      padding: 24px 26px;
+      margin: 28px 0 20px;
+    }
+    .intro-card p { color: #c8d8f0; font-size: 1rem; line-height: 1.6; margin-bottom: 14px; }
+    .intro-card ul { color: #9fc0ff; font-size: .95rem; line-height: 1.8; padding-left: 20px; margin-bottom: 16px; }
+    .intro-card ul strong { color: #eaf1ff; }
+    .intro-links { display: flex; gap: 20px; flex-wrap: wrap; font-size: .92rem; }
+    .intro-links a { color: #60a5fa; font-weight: 600; }
+    .intro-links a:hover { color: #fff; }
+
+    /* Login box */
+    .login-box {
+      background: rgba(255,255,255,.05);
+      border: 1px solid rgba(255,255,255,.1);
+      border-radius: 16px;
+      padding: 28px 26px;
+      margin-bottom: 20px;
+    }
+    .login-box label {
+      display: block;
+      font-family: var(--display);
+      font-weight: 700;
+      font-size: .78rem;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: #9fc0ff;
+      margin-bottom: 12px;
+    }
+    .email-row { display: flex; gap: 10px; flex-wrap: wrap; }
+    .email-row input[type="email"] {
+      flex: 1;
+      min-width: 200px;
+      padding: 13px 16px;
+      font-family: var(--body);
+      font-size: 1rem;
+      background: rgba(255,255,255,.08);
+      border: 1px solid rgba(255,255,255,.2);
+      border-radius: 10px;
+      color: #fff;
+      outline: none;
+    }
+    .email-row input[type="email"]::placeholder { color: #4a5878; }
+    .email-row input[type="email"]:focus { border-color: var(--blue); background: rgba(43,91,208,.1); }
+    .btn-primary {
+      padding: 13px 24px;
+      font-family: var(--display);
+      font-weight: 700;
+      font-size: 1rem;
+      background: var(--blue);
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: background .15s;
+      white-space: nowrap;
+    }
+    .btn-primary:hover { background: #3d6de0; }
+    #loginStatus { color: #f87171; font-size: .92rem; margin-top: 10px; min-height: 1.2em; }
+
+    /* Welcome bar */
+    .welcome-bar {
+      background: rgba(245,197,24,.08);
+      border: 1px solid rgba(245,197,24,.25);
+      border-radius: 12px;
+      padding: 14px 20px;
+      margin-bottom: 18px;
+      font-family: var(--display);
+      font-weight: 700;
+      font-size: 1.15rem;
+      color: var(--gold);
+    }
+
+    /* Game info */
+    .game-info {
+      color: #9fc0ff;
+      font-size: .95rem;
+      margin-bottom: 20px;
+    }
+    .game-info strong { color: #eaf1ff; }
+
+    /* Instructions */
+    .pick-instructions {
+      color: #9fc0ff;
+      font-size: .92rem;
+      margin-bottom: 18px;
+    }
+
+    /* Game cards */
+    .game {
+      background: rgba(255,255,255,.05);
+      border: 1px solid rgba(255,255,255,.1);
+      border-radius: 14px;
+      padding: 20px 22px;
+      margin-bottom: 14px;
+      transition: border-color .15s;
+    }
+    .game:has(input:checked) { border-color: rgba(43,91,208,.5); background: rgba(43,91,208,.08); }
+
+    .field-label {
+      font-family: var(--display);
+      font-weight: 800;
+      font-size: 1rem;
+      color: #fff;
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .field-label::before { content: '⚾'; font-size: .9rem; }
+
+    .pick-options { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    @media(max-width: 480px) { .pick-options { grid-template-columns: 1fr; } }
+
+    .pick-option { position: relative; }
+    .pick-option input[type="radio"] { position: absolute; opacity: 0; width: 0; height: 0; }
+    .pick-option label {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 16px;
+      border: 1.5px solid rgba(255,255,255,.15);
+      border-radius: 10px;
+      cursor: pointer;
+      font-size: .95rem;
+      font-weight: 600;
+      color: #c8d8f0;
+      background: rgba(255,255,255,.04);
+      transition: border-color .15s, background .15s, color .15s;
+      user-select: none;
+    }
+    .pick-option label .badge {
+      font-family: var(--display);
+      font-weight: 700;
+      font-size: .65rem;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      padding: 2px 7px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.1);
+      color: #9fc0ff;
+      flex-shrink: 0;
+    }
+    .pick-option input:checked + label {
+      border-color: var(--blue);
+      background: rgba(43,91,208,.2);
+      color: #fff;
+    }
+    .pick-option input:checked + label .badge {
+      background: var(--blue);
+      color: #fff;
+    }
+    .pick-option label:hover {
+      border-color: rgba(43,91,208,.5);
+      background: rgba(43,91,208,.1);
+      color: #fff;
+    }
+
+    /* Submit button */
+    .submit-row { margin-top: 24px; }
+    .btn-submit {
+      width: 100%;
+      padding: 16px;
+      font-family: var(--display);
+      font-weight: 800;
+      font-size: 1.1rem;
+      background: linear-gradient(135deg, #2b5bd0, #1a3fa0);
+      color: #fff;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: opacity .15s, transform .05s;
+      letter-spacing: .03em;
+    }
+    .btn-submit:hover { opacity: .9; transform: translateY(-1px); }
+    .btn-submit:active { transform: translateY(0); }
+
+    #status { color: #4a5878; font-size: .88rem; margin-top: 10px; text-align: center; }
+
+    /* Closed / no games state */
+    .closed-msg {
+      background: rgba(255,255,255,.05);
+      border: 1px solid rgba(255,255,255,.1);
+      border-radius: 14px;
+      padding: 32px;
+      text-align: center;
+      color: #9fc0ff;
+      font-size: 1rem;
+    }
+    .closed-msg strong { display: block; font-family: var(--display); font-size: 1.2rem; color: #fff; margin-bottom: 8px; }
+  </style>
+</head>
+
+<body>
+
+<div class="hdr">
+  <div class="hdr-inner">
+    <div class="eyebrow">Jupiter Senior Softball Association</div>
+    <h1>🎯 Pickup Games Prediction Contest</h1>
+    <p class="sub">Think you can spot the stronger team before the first pitch?</p>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <div id="predictionAlert" class="alert"></div>
+
+  <div class="intro-card">
+    <p>Review the posted game-day rosters, then pick the team you think will win.</p>
+    <ul>
+      <li>Pick the winners for as many or as few games as you want.</li>
+      <li>Ballots are available until <strong>8:00 AM</strong> on game day.</li>
+      <li>You can change your picks until predictions close.</li>
+      <li>Only your most recent prediction for each game will count.</li>
+      <li>Each correct prediction earns <strong>1 point</strong>.</li>
+    </ul>
+    <div class="intro-links">
+      <a href="https://docs.google.com/document/d/1i7GffpzlHDZeslIDnUYzIvDPdCom8qUYavLFclpp8J4/edit?usp=sharing" target="_blank">📖 How It Works</a>
+      <a href="https://script.google.com/macros/s/AKfycbwqXbN6B6WNa7Dye3NJcUWzmNrMETCZWjW2F8JrjmhKb7F3idebOxiBeRm1Fpzpx1ij/exec?view=prediction_leaderboard" target="_blank">🏆 View Leaderboard</a>
+    </div>
+  </div>
+
+  <div id="login" class="login-box">
+    <label for="memberEmail">Enter your JSSA member email address</label>
+    <div class="email-row">
+      <input type="email" id="memberEmail" placeholder="you@example.com">
+      <button class="btn-primary" onclick="validateMemberEmail()">Continue →</button>
+    </div>
+    <p id="loginStatus"></p>
+  </div>
+
+  <div id="ballot" style="display:none;">
+    <div id="welcome"></div>
+    <div id="gameInfo" class="game-info"></div>
+    <p class="pick-instructions">Select the winner of each game you wish to predict. You do not need to predict every game.</p>
+    <div id="games"><div class="closed-msg"><strong>Loading games...</strong></div></div>
+    <div class="submit-row">
+      <button id="submitButton" class="btn-submit" onclick="submitPredictions()" style="display:none;">Submit My Predictions</button>
+    </div>
+  </div>
+
+  <p id="status"></p>
+
+</div>
+
+<script>
+  let games = [];
+  let currentPlayer = null;
+  let hasUnsavedPredictions = false;
+
+  function showAlert(message, type) {
+    const alertBox = document.getElementById('predictionAlert');
+    alertBox.innerText = message;
+    alertBox.className = 'alert ' + type;
+  }
+
+  function validateMemberEmail() {
+    const email = document.getElementById('memberEmail').value.trim();
+    if (!email) {
+      document.getElementById('loginStatus').innerText = 'Please enter your email address.';
+      return;
+    }
+    document.getElementById('loginStatus').innerText = 'Checking membership...';
+
+    google.script.run
+      .withSuccessHandler(function(result) {
+        if (!result.valid) {
+          document.getElementById('loginStatus').innerText = result.message;
+          return;
+        }
+        currentPlayer = result;
+        document.getElementById('welcome').innerHTML =
+          '<div class="welcome-bar">👋 Welcome back, ' + result.name + '!</div>';
+        document.getElementById('login').style.display = 'none';
+        document.getElementById('ballot').style.display = 'block';
+        document.getElementById('submitButton').style.display = 'block';
+
+        google.script.run
+          .withSuccessHandler(renderGames)
+          .withFailureHandler(function(error) {
+            showAlert('Error loading games: ' + error.message, 'error');
+          })
+          .getPredictionGamesForBallot();
+      })
+      .withFailureHandler(function(error) {
+        document.getElementById('loginStatus').innerText = error.message;
+      })
+      .validatePredictionPlayerByEmail(email);
+  }
+
+  function renderGames(response) {
+    if (!response.open) {
+      document.getElementById('games').innerHTML =
+        '<div class="closed-msg"><strong>Predictions are closed</strong>' + response.message + '</div>';
+      document.getElementById('submitButton').style.display = 'none';
+      return;
+    }
+
+    games = response.games || [];
+
+    document.getElementById('gameInfo').innerHTML =
+      'Games scheduled for <strong>' + response.gameDate + '</strong> at <strong>' + response.gameLocation + '</strong>.';
+
+    if (!games.length) {
+      document.getElementById('games').innerHTML =
+        '<div class="closed-msg"><strong>No games open</strong>No prediction games are currently open.</div>';
+      document.getElementById('submitButton').style.display = 'none';
+      return;
+    }
+
+    let html = '';
+    games.forEach((game, index) => {
+      html += `
+        <div class="game">
+          <div class="field-label">${game.field}</div>
+          <div class="pick-options">
+            <div class="pick-option">
+              <input type="radio" name="game_${index}" id="home_${index}" value="H" onchange="markUnsaved()">
+              <label for="home_${index}">
+                <span class="badge">Home</span>
+                ${game.homeCaptain}
+              </label>
+            </div>
+            <div class="pick-option">
+              <input type="radio" name="game_${index}" id="visitor_${index}" value="V" onchange="markUnsaved()">
+              <label for="visitor_${index}">
+                <span class="badge">Visitor</span>
+                ${game.visitorCaptain}
+              </label>
+            </div>
+          </div>
+        </div>
+      `;
+    });
+
+    document.getElementById('games').innerHTML = html;
+  }
+
+  function markUnsaved() {
+    hasUnsavedPredictions = true;
+    showAlert('Unsaved picks — click Submit My Predictions to save your choices.', 'unsaved');
+  }
+
+  function submitPredictions() {
+    const picks = [];
+    games.forEach((game, index) => {
+      const selected = document.querySelector(`input[name="game_${index}"]:checked`);
+      if (selected) {
+        picks.push({ gameDate: game.gameDate, field: game.field, predictedWinner: selected.value });
+      }
+    });
+
+    if (!picks.length) {
+      showAlert('Please select at least one prediction before submitting.', 'error');
+      return;
+    }
+
+    showAlert('Saving your predictions...', 'saving');
+
+    google.script.run
+      .withSuccessHandler(function(response) {
+        hasUnsavedPredictions = false;
+        showAlert('✅ Predictions saved! Good luck out there.', 'saved');
+        document.getElementById('status').innerText = response.message;
+      })
+      .withFailureHandler(function(error) {
+        showAlert('Error submitting predictions: ' + error.message, 'error');
+      })
+      .savePredictionSubmission({ player: currentPlayer, picks: picks });
+  }
+</script>
+</body>
+</html>
