@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JSSA Prediction Contest — How It Works</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800;900&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --navy: #16233f;
+      --navy2: #1e2f52;
+      --blue: #2b5bd0;
+      --gold: #f5c518;
+      --red: #d8262b;
+      --display: 'Archivo', system-ui, sans-serif;
+      --body: 'Inter', system-ui, sans-serif;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 112.5%; -webkit-font-smoothing: antialiased; }
+    body { font-family: var(--body); background: var(--navy); color: #eaf1ff; min-height: 100vh; padding: 0 0 60px; }
+    a { color: #9fc0ff; text-decoration: none; }
+    a:hover { color: #fff; }
+
+    /* Header */
+    .hdr { background: linear-gradient(135deg, #0d1a33 0%, #1a2d55 100%); border-bottom: 1px solid rgba(255,255,255,.1); padding: 28px 24px 24px; }
+    .hdr-inner { max-width: 780px; margin: 0 auto; }
+    .hdr .eyebrow { font-family: var(--display); font-weight: 700; font-size: .78rem; letter-spacing: .14em; text-transform: uppercase; color: #9fc0ff; margin-bottom: 8px; }
+    .hdr h1 { font-family: var(--display); font-weight: 900; font-size: clamp(1.6rem, 4vw, 2.4rem); color: #fff; line-height: 1.1; }
+    .hdr .sub { color: #9fc0ff; font-size: 1rem; margin-top: 10px; line-height: 1.5; max-width: 600px; }
+
+    /* Wrap */
+    .wrap { max-width: 780px; margin: 0 auto; padding: 0 20px; }
+
+    /* Section heading */
+    .sec-head { font-family: var(--display); font-weight: 800; font-size: 1.1rem; color: #fff; margin: 36px 0 16px; display: flex; align-items: center; gap: 10px; }
+    .sec-head::after { content: ''; flex: 1; height: 1px; background: rgba(255,255,255,.1); }
+
+    /* Steps */
+    .steps { display: flex; flex-direction: column; gap: 12px; margin-bottom: 8px; }
+    .step { display: flex; gap: 16px; align-items: flex-start; background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.1); border-radius: 14px; padding: 18px 20px; }
+    .step-num { font-family: var(--display); font-weight: 900; font-size: 1.3rem; color: var(--blue); min-width: 32px; line-height: 1.2; }
+    .step-body { flex: 1; }
+    .step-body strong { font-family: var(--display); font-weight: 700; font-size: 1rem; color: #fff; display: block; margin-bottom: 4px; }
+    .step-body p { color: #9fc0ff; font-size: .95rem; line-height: 1.55; }
+
+    /* Info cards */
+    .cards { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 8px; }
+    @media(max-width: 560px) { .cards { grid-template-columns: 1fr; } }
+    .card { background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.1); border-left: 4px solid var(--blue); border-radius: 14px; padding: 20px 22px; }
+    .card .ctitle { font-family: var(--display); font-weight: 700; font-size: .78rem; letter-spacing: .08em; text-transform: uppercase; color: #9fc0ff; margin-bottom: 8px; }
+    .card p { color: #c8d8f0; font-size: .95rem; line-height: 1.6; }
+    .card p strong { color: #fff; }
+
+    /* Champion callout */
+    .champion {
+      background: rgba(245,197,24,.08);
+      border: 1px solid rgba(245,197,24,.3);
+      border-radius: 18px;
+      padding: 32px 28px;
+      text-align: center;
+      margin-top: 36px;
+    }
+    .champion .trophy { font-size: 3rem; margin-bottom: 12px; }
+    .champion .label { font-family: var(--display); font-weight: 700; font-size: .78rem; letter-spacing: .14em; text-transform: uppercase; color: var(--gold); margin-bottom: 10px; }
+    .champion h2 { font-family: var(--display); font-weight: 900; font-size: clamp(1.4rem, 3vw, 2rem); color: var(--gold); line-height: 1.15; margin-bottom: 14px; }
+    .champion p { color: #c8d8f0; font-size: 1rem; line-height: 1.6; max-width: 520px; margin: 0 auto; }
+
+    /* Nav links */
+    .nav-links { display: flex; gap: 16px; flex-wrap: wrap; margin: 32px 0 0; padding-top: 24px; border-top: 1px solid rgba(255,255,255,.07); justify-content: center; }
+    .nav-links a { font-family: var(--display); font-weight: 700; font-size: .95rem; color: #60a5fa; padding: 10px 20px; border: 1px solid rgba(43,91,208,.4); border-radius: 10px; transition: background .15s; }
+    .nav-links a:hover { background: rgba(43,91,208,.15); color: #fff; }
+  </style>
+</head>
+<body>
+
+<div class="hdr">
+  <div class="hdr-inner">
+    <div class="eyebrow">Jupiter Senior Softball Association</div>
+    <h1>🎯 JSSA Prediction Contest</h1>
+    <p class="sub">Think you know which team is stacked? Review the rosters, make your picks, and see how your prediction skills stack up against the rest of the league.</p>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <div class="sec-head">How It Works</div>
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <strong>Check the Game Day rosters</strong>
+        <p>When the Game Day Teams sheet is posted to the JSSA website, review the rosters for each field. That's your scouting report.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <strong>Make your picks before 9:00 AM</strong>
+        <p>The prediction ballot opens when rosters are published and closes at <strong style="color:#fff">9:00 AM</strong> on game day. Click the prediction link in the Game Day Teams sheet to submit your picks.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <strong>Pick one game or all of them</strong>
+        <p>You don't have to predict every game — pick as many or as few as you like. Only your most recent submission for each game counts, so you can always change your mind before 9:00 AM.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-body">
+        <strong>Watch the live odds shift</strong>
+        <p>As members submit their picks, the live odds on the JSSA website update in real time — you can see where the crowd is leaning right up until the ballot closes.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">5</div>
+      <div class="step-body">
+        <strong>Results are reported after the games</strong>
+        <p>Game results are texted to <strong style="color:#fff">412-721-0173</strong> by division board members or participating players after each game. Only the winning side — Home (H) or Visitor (V) — needs to be reported.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="sec-head">Leaderboard &amp; Standings</div>
+  <div class="cards">
+    <div class="card">
+      <div class="ctitle">How rankings work</div>
+      <p>Your accuracy is calculated as correct picks ÷ total picks. The leaderboard is sorted by accuracy, with ties broken by total correct predictions.</p>
+    </div>
+    <div class="card">
+      <div class="ctitle">Qualification rule</div>
+      <p>You must submit at least <strong>4 picks</strong> in a month to qualify for that month's standings. Players with fewer than 4 picks are not ranked.</p>
+    </div>
+    <div class="card">
+      <div class="ctitle">When standings update</div>
+      <p>The leaderboard updates automatically after each game day's results are entered. Check back after game day to see the latest standings.</p>
+    </div>
+    <div class="card">
+      <div class="ctitle">View the leaderboard</div>
+      <p>See who's leading the pack, today's top scorer, monthly accuracy stats, and season insights — all on the <a href="https://script.google.com/macros/s/AKfycbwqXbN6B6WNa7Dye3NJcUWzmNrMETCZWjW2F8JrjmhKb7F3idebOxiBeRm1Fpzpx1ij/exec?view=prediction_leaderboard">Prediction Leaderboard →</a></p>
+    </div>
+  </div>
+
+  <div class="champion">
+    <div class="trophy">🏆</div>
+    <div class="label">Monthly Recognition</div>
+    <h2>JSSA Prediction Champion of the Month</h2>
+    <p>Each month, the JSSA member with the highest prediction accuracy among all qualified players is recognized as the Prediction Champion. Can you top the leaderboard?</p>
+  </div>
+
+  <div class="nav-links">
+    <a href="https://script.google.com/macros/s/AKfycbwqXbN6B6WNa7Dye3NJcUWzmNrMETCZWjW2F8JrjmhKb7F3idebOxiBeRm1Fpzpx1ij/exec?view=predictions_test">🎯 Go to Ballot</a>
+    <a href="https://script.google.com/macros/s/AKfycbwqXbN6B6WNa7Dye3NJcUWzmNrMETCZWjW2F8JrjmhKb7F3idebOxiBeRm1Fpzpx1ij/exec?view=prediction_leaderboard">🥇 View Leaderboard</a>
+  </div>
+
+</div>
+</body>
+</html>
