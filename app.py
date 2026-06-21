@@ -98,6 +98,18 @@ def teams():
     return render_template("teams.html", teams=data)
 
 
+@app.route("/teams/debug")
+def teams_debug():
+    """Temporary: shows raw sheet rows so we can diagnose parsing issues."""
+    import json
+    try:
+        ws = sheets._teams_worksheet()
+        rows = ws.get_all_values()
+        return "<pre>" + json.dumps(rows[:10], indent=2) + "</pre>"
+    except Exception as e:
+        return "<pre>ERROR: " + str(e) + "</pre>"
+
+
 @app.route("/teams/preview")
 def teams_preview():
     """Design preview using sample data — remove this route before next season."""
