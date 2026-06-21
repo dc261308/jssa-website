@@ -182,6 +182,7 @@
   .obar:last-child{margin-bottom:0}
   .onopicks{color:#cbd6ee;font-size:.98rem;padding:4px 0 2px}
   .odds-note{color:#9fc0ff;font-size:.9rem;margin:16px 0 0;text-align:center}
+  .odds-quiet{color:#9fc0ff;font-size:1rem;margin:10px 0 4px;line-height:1.6}
   .board{margin-top:30px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);border-radius:16px;padding:22px 22px 18px}
   .board-head{font-family:var(--display);font-weight:800;color:#fff;font-size:1.18rem;margin:0 0 4px;display:flex;align-items:center;gap:9px}
   .board-sub{color:#9fc0ff;font-size:.95rem;margin:0 0 16px}
@@ -497,26 +498,29 @@
     </div>
 
     {% if pred_odds %}
+    {% set has_picks = pred_odds | selectattr('total') | list | length > 0 %}
     <div class="odds">
       <div class="odds-head">🔮 Live odds — how the league is picking</div>
+      {% if has_picks %}
       <p class="odds-sub">Updating as members lock in their picks. The bars move right up until game time.</p>
       {% for g in pred_odds %}
+      {% if g.total %}
       <div class="ogame">
         <div class="ofield">
           <span>{{ g.field }}</span>
-          {% if g.total %}<span class="on">{{ g.total }} pick{{ '' if g.total == 1 else 's' }} in</span>{% endif %}
+          <span class="on">{{ g.total }} pick{{ '' if g.total == 1 else 's' }} in</span>
         </div>
-        {% if g.total %}
-          <div class="obar home"><div class="ofill" style="width:{{ g.home_pct }}%"></div>
-            <div class="olabel"><span>H – {{ g.home or 'Home' }}</span><span>{{ g.home_pct }}%</span></div></div>
-          <div class="obar away"><div class="ofill" style="width:{{ g.away_pct }}%"></div>
-            <div class="olabel"><span>V – {{ g.away or 'Visitor' }}</span><span>{{ g.away_pct }}%</span></div></div>
-        {% else %}
-          <div class="onopicks">No picks in yet — be the first to call it!</div>
-        {% endif %}
+        <div class="obar home"><div class="ofill" style="width:{{ g.home_pct }}%"></div>
+          <div class="olabel"><span>H – {{ g.home or 'Home' }}</span><span>{{ g.home_pct }}%</span></div></div>
+        <div class="obar away"><div class="ofill" style="width:{{ g.away_pct }}%"></div>
+          <div class="olabel"><span>V – {{ g.away or 'Visitor' }}</span><span>{{ g.away_pct }}%</span></div></div>
       </div>
+      {% endif %}
       {% endfor %}
       <p class="odds-note">These are the crowd's picks, not a guarantee — make your own call above!</p>
+      {% else %}
+      <p class="odds-quiet">Picks open when the game lineup is posted. Check back on game day to see how the league is calling it — the bars update live as members lock in their picks.</p>
+      {% endif %}
     </div>
     {% endif %}
 
