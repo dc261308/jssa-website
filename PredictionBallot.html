@@ -219,15 +219,21 @@
 
     /* Instructions */
     .pick-instructions {
-      color: #9fc0ff;
-      font-size: .92rem;
+      background: rgba(43,91,208,.12);
+      border: 1px solid rgba(43,91,208,.3);
+      border-radius: 10px;
+      padding: 12px 16px;
+      color: #c8d8f0;
+      font-size: 1rem;
+      font-weight: 600;
       margin-bottom: 18px;
+      text-align: center;
     }
 
     /* Game cards */
     .game {
       background: rgba(255,255,255,.05);
-      border: 1px solid rgba(255,255,255,.1);
+      border: 2px solid rgba(255,255,255,.15);
       border-radius: 14px;
       padding: 20px 22px;
       margin-bottom: 14px;
@@ -254,43 +260,51 @@
     .pick-option input[type="radio"] { position: absolute; opacity: 0; width: 0; height: 0; }
     .pick-option label {
       display: flex;
+      flex-direction: column;
       align-items: center;
-      gap: 10px;
-      padding: 12px 16px;
-      border: 1.5px solid rgba(255,255,255,.15);
-      border-radius: 10px;
+      gap: 8px;
+      padding: 16px 14px;
+      border: 2px solid rgba(255,255,255,.18);
+      border-radius: 12px;
       cursor: pointer;
-      font-size: .95rem;
-      font-weight: 600;
-      color: #c8d8f0;
-      background: rgba(255,255,255,.04);
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #eaf1ff;
+      background: rgba(255,255,255,.05);
       transition: border-color .15s, background .15s, color .15s;
       user-select: none;
+      text-align: center;
+      min-height: 90px;
+      justify-content: center;
     }
     .pick-option label .badge {
       font-family: var(--display);
-      font-weight: 700;
-      font-size: .65rem;
-      letter-spacing: .08em;
+      font-weight: 800;
+      font-size: .82rem;
+      letter-spacing: .06em;
       text-transform: uppercase;
-      padding: 2px 7px;
+      padding: 4px 12px;
       border-radius: 999px;
-      background: rgba(255,255,255,.1);
-      color: #9fc0ff;
+      background: rgba(255,255,255,.15);
+      color: #fff;
       flex-shrink: 0;
+      border: 1px solid rgba(255,255,255,.25);
     }
     .pick-option input:checked + label {
       border-color: var(--blue);
-      background: rgba(43,91,208,.2);
+      border-width: 3px;
+      background: rgba(43,91,208,.25);
       color: #fff;
+      box-shadow: 0 0 0 3px rgba(43,91,208,.2);
     }
     .pick-option input:checked + label .badge {
       background: var(--blue);
       color: #fff;
+      border-color: var(--blue);
     }
     .pick-option label:hover {
-      border-color: rgba(43,91,208,.5);
-      background: rgba(43,91,208,.1);
+      border-color: rgba(43,91,208,.6);
+      background: rgba(43,91,208,.12);
       color: #fff;
     }
 
@@ -437,14 +451,17 @@
   <div id="ballot" style="display:none; margin-top: 20px;">
     <div id="welcome"></div>
     <div id="gameInfo" class="game-info"></div>
-    <p class="pick-instructions">Select the winner of each game you wish to predict. You do not need to predict every game.</p>
+    <p class="pick-instructions">👇 Click <strong>Home</strong> or <strong>Visitor</strong> to pick the winner of each game. You can pick one game or all of them.</p>
     <div id="games"><div class="closed-msg"><strong>Loading games...</strong></div></div>
     <div class="submit-row">
       <button id="submitButton" class="btn-submit" onclick="submitPredictions()" style="display:none;">Submit My Predictions</button>
     </div>
+    <p id="status"></p>
   </div>
 
-  <p id="status"></p>
+  <div style="text-align:center; margin-top:24px; padding-top:20px; border-top:1px solid rgba(255,255,255,.07);">
+    <a href="https://www.jupiterseniorbaseball.com" style="font-family:'Archivo',sans-serif; font-weight:700; font-size:.95rem; color:#60a5fa; padding:11px 24px; border:1px solid rgba(43,91,208,.4); border-radius:10px; display:inline-block;">← Back to JSSA Website</a>
+  </div>
 
 </div>
 
