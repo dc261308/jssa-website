@@ -372,7 +372,7 @@
     <h1><span class="welcome">Welcome to the home of</span>Jupiter Senior Softball</h1>
     <p class="lede"><strong>Monday, Wednesday &amp; Friday</strong> at Jupiter Community Park</p>
     <div class="cta-row">
-      <a id="rosterBtn" class="btn btn-red" href="/teams" style="display:none">⚾ Game Day Rosters Are Posted — View Teams &rarr;</a>
+      <a id="rosterBtn" class="btn btn-red" href="https://docs.google.com/spreadsheets/d/1oHgGae0aXVVsr7t9hmDmoLxZWO5p9rLFPebSsXoFfAA/edit?gid=1483978424#gid=1483978424" target="_blank" rel="noopener" style="display:none">⚾ Game Day Rosters Are Posted — View Teams &rarr;</a>
     </div>
     <script>
     (function(){
@@ -380,8 +380,7 @@
       // teams_posted comes from the same jssa-data island used by the top banner.
       var data = {teams_posted:false};
       try { data = JSON.parse(document.getElementById('jssa-data').textContent); } catch(e){}
-      // roster button temporarily disabled while teams link is being fixed
-      // if (data.teams_posted) document.getElementById('rosterBtn').style.display = '';
+      if (data.teams_posted) document.getElementById('rosterBtn').style.display = '';
     })();
     </script>
 
@@ -464,11 +463,11 @@
         <span class="qb-txt">Pickup Game Schedule</span>
         <span class="qb-go">See the dates →</span>
       </a>
-      <div class="qb-btn" style="cursor:default;opacity:.6">
+      <a class="qb-btn" href="https://docs.google.com/spreadsheets/d/1oHgGae0aXVVsr7t9hmDmoLxZWO5p9rLFPebSsXoFfAA/edit?gid=1483978424#gid=1483978424" target="_blank" rel="noopener">
         <span class="qb-ic">📋</span>
         <span class="qb-txt">Pickup Game Rosters</span>
-        <span class="qb-go">Coming soon →</span>
-      </div>
+        <span class="qb-go">See who's playing →</span>
+      </a>
     </div>
   </div>
 </section>
