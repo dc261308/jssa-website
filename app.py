@@ -98,6 +98,75 @@ def teams():
     return render_template("teams.html", teams=data)
 
 
+@app.route("/teams/preview")
+def teams_preview():
+    """Design preview using sample data — remove this route before next season."""
+    data = {
+        "date": "Monday, June 23, 2026",
+        "park": "Maplewood Park",
+        "info": "BP Starts at 8:30 AM",
+        "total_players": 41,
+        "fields": [
+            {
+                "name": "Maplewood West — 9:00 AM",
+                "home": [
+                    {"name": "Harold Fravel",   "pos": "OF",      "captain": True},
+                    {"name": "Lewie Bergman",   "pos": "2B, MF",  "captain": False},
+                    {"name": "Mike Clementi",   "pos": "3B, OF",  "captain": False},
+                    {"name": "Tom Cosentino",   "pos": "SS, MF",  "captain": False},
+                    {"name": "Steven Klein",    "pos": "IF, OF",  "captain": False},
+                    {"name": "Steve Kurman",    "pos": "P",       "captain": False},
+                    {"name": "Joe Mercurio",    "pos": "OF, IF",  "captain": False},
+                    {"name": "Antonio Papa",    "pos": "OF, IF",  "captain": False},
+                    {"name": "Dave Pelsor",     "pos": "P",       "captain": False},
+                    {"name": "Vic Troiano",     "pos": "P, 2B",   "captain": False},
+                ],
+                "visitor": [
+                    {"name": "Steve Gibelli",     "pos": "IF",      "captain": True},
+                    {"name": "John Berilla",      "pos": "OF, IF",  "captain": False},
+                    {"name": "John Cariero",      "pos": "OF",      "captain": False},
+                    {"name": "Norm Falick",       "pos": "2B, MF",  "captain": False},
+                    {"name": "Jorge Garcia",      "pos": "1B, 2B",  "captain": False},
+                    {"name": "Gilbert Morejon",   "pos": "SS, MF",  "captain": False},
+                    {"name": "Chris Okolichany",  "pos": "OF, P",   "captain": False},
+                    {"name": "Mick Sipula",       "pos": "OF, IF",  "captain": False},
+                    {"name": "Don Spieller",      "pos": "OF",      "captain": False},
+                    {"name": "John Sullivan",     "pos": "P, OF",   "captain": False},
+                    {"name": "Steve Tanis",       "pos": "OF, IF",  "captain": False},
+                ],
+            },
+            {
+                "name": "Maplewood East — 9:00 AM",
+                "home": [
+                    {"name": "Chase St James",  "pos": "P, IF",   "captain": True},
+                    {"name": "Joe Baldwin",     "pos": "OF",      "captain": False},
+                    {"name": "John Buckman",    "pos": "1B, P",   "captain": False},
+                    {"name": "Robert Davis",    "pos": "P, 1B",   "captain": False},
+                    {"name": "Sid Dinerstein",  "pos": "OF, IF",  "captain": False},
+                    {"name": "Ken Mair",        "pos": "SS, OF",  "captain": False},
+                    {"name": "Jeff McCrave",    "pos": "OF",      "captain": False},
+                    {"name": "Mike Richmond",   "pos": "OF",      "captain": False},
+                    {"name": "Barry Skolnik",   "pos": "P",       "captain": False},
+                    {"name": "Dick Wendling",   "pos": "IF, OF",  "captain": False},
+                ],
+                "visitor": [
+                    {"name": "Arnold Jungkind",   "pos": "OF, 1B, P", "captain": True},
+                    {"name": "Allen Adams",       "pos": "OF, IF",    "captain": False},
+                    {"name": "Doug Adams",        "pos": "OF, 1B",    "captain": False},
+                    {"name": "Jeff Barron",       "pos": "IF",        "captain": False},
+                    {"name": "Norm Haltrich",     "pos": "OF",        "captain": False},
+                    {"name": "Scott Johnson",     "pos": "2B, MF",    "captain": False},
+                    {"name": "Mike McClanahan",   "pos": "P",         "captain": False},
+                    {"name": "Ralph Randazzo",    "pos": "OF",        "captain": False},
+                    {"name": "Ricky Steckler",    "pos": "IF",        "captain": False},
+                    {"name": "Paul Straubinger",  "pos": "P, IF, OF", "captain": False},
+                ],
+            },
+        ],
+    }
+    return render_template("teams.html", teams=data)
+
+
 @app.route("/players")
 def players():
     try:
