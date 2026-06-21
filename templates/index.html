@@ -524,38 +524,6 @@
     </div>
     {% endif %}
 
-    {% if pred_board %}
-    <div class="board">
-      <div class="board-head">🏆 Leaderboard — this season's top predictors</div>
-      <p class="board-sub">Most correct picks against the real results. Updates after every game day.</p>
-      <table class="btable">
-        <thead>
-          <tr>
-            <th class="brank">#</th>
-            <th>Player</th>
-            <th class="num hide-sm">Picks</th>
-            <th class="num">Correct</th>
-            <th class="num">Points</th>
-            <th class="num hide-sm">Accuracy</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for p in pred_board %}
-          <tr{% if p.name|lower == 'tom cosentino' %} class="me"{% endif %}>
-            <td class="brank">{{ p.rank or loop.index }}</td>
-            <td class="bname">{{ p.name }}</td>
-            <td class="num hide-sm">{{ p.predictions }}</td>
-            <td class="num">{{ p.correct }}</td>
-            <td class="num bpts">{{ p.points }}</td>
-            <td class="num hide-sm">{{ p.accuracy }}</td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-      <p class="board-note">Showing the top {{ pred_board|length }}. <a href="https://script.google.com/macros/s/AKfycbwqXbN6B6WNa7Dye3NJcUWzmNrMETCZWjW2F8JrjmhKb7F3idebOxiBeRm1Fpzpx1ij/exec?view=prediction_leaderboard" target="_blank" rel="noopener">See the full leaderboard →</a></p>
-    </div>
-    {% endif %}
-
     {% if pred_stats %}
     <div class="insights">
       <div class="insights-head">📈 Season insights</div>
@@ -579,6 +547,13 @@
         <div class="icard wide"><div class="ival">{{ pred_stats['most underrated captain'].value }}</div><div class="ilab">Most underrated captain</div></div>
         {% endif %}
       </div>
+    </div>
+    {% endif %}
+
+    {% if pred_board %}
+    <div class="board">
+      <div class="board-head">🏆 This season's top predictors</div>
+      <p class="board-note" style="margin:8px 0 0">Most correct picks against real results. <a href="https://script.google.com/macros/s/AKfycbwqXbN6B6WNa7Dye3NJcUWzmNrMETCZWjW2F8JrjmhKb7F3idebOxiBeRm1Fpzpx1ij/exec?view=prediction_leaderboard" target="_blank" rel="noopener">See the full leaderboard →</a></p>
     </div>
     {% endif %}
   </div>
