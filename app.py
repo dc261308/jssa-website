@@ -68,10 +68,6 @@ def home():
     except Exception:
         blackboard = []
     try:
-        photos = sheets.highlight_photo_ids()
-    except Exception:
-        photos = []
-    try:
         board = sheets.board_members()
     except Exception:
         board = []
@@ -99,7 +95,7 @@ def home():
         views = None
     return render_template("index.html", notice=notice,
                            teams_posted=teams_posted, blackboard=blackboard,
-                           photos=photos, board=board, sponsors=sponsor_list,
+                           board=board, sponsors=sponsor_list,
                            pred_odds=pred_odds, pred_board=pred_board,
                            pred_stats=pred_stats, views=views)
 
