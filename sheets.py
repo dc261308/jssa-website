@@ -1123,18 +1123,20 @@ _views = {"base": None, "pending": 0, "ts": 0.0, "flushed_ts": 0.0,
 _VIEWS_TTL = 300            # re-read the saved total from the sheet at most every 5 min
 _VIEWS_FLUSH_EVERY = 10     # write to the sheet once this many new views pile up
 _VIEWS_FLUSH_SECONDS = 120  # ...or this long has passed with views still buffered
+_VIEWS_START = 230          # the counter's starting number; real visits stack on top
 
 
 def _views_sheet_row():
     """Return (worksheet, row_number, current_value) for the homepage_views row,
-    creating the tab and/or the row (starting at 0) if they don't exist yet."""
+    creating the tab and/or the row (starting at _VIEWS_START) if they don't
+    exist yet."""
     ws = _simple_worksheet(SITESTATS_TAB, STATS_HEADERS)
     records = ws.get_all_records(expected_headers=STATS_HEADERS)
     for i, rec in enumerate(records):
         if str(rec.get("metric")).strip() == _VIEWS_METRIC:
             return ws, i + 2, _to_int(rec.get("value"))
-    ws.append_row([_VIEWS_METRIC, 0], value_input_option="USER_ENTERED")
-    return ws, len(records) + 2, 0
+    ws.append_row([_VIEWS_METRIC, _VIEWS_START], value_input_option="USER_ENTERED")
+    return ws, len(records) + 2, _VIEWS_START
 
 
 def _flush_views():
@@ -1148,7 +1150,8 @@ def _flush_views():
             return
         try:
             ws, row, current = _views_sheet_row()
-            new_total = current + pending
+            # Never let the stored total fall below the starting number.
+            new_total = max(current, _VIEWS_START) + pending
             ws.update_cell(row, STATS_HEADERS.index("value") + 1, new_total)
             with _views_lock:
                 _views["base"] = new_total
@@ -1181,25 +1184,26 @@ def record_home_view():
 
 
 def home_view_count():
-    """Total homepage visits to display: the saved total plus any buffered views
-    not yet written. Returns 0 if the content sheet isn't configured."""
+    """Total homepage visits to display: the starting number (or saved total, if
+    higher) plus any buffered views not yet written. Returns 0 if the content
+    sheet isn't configured."""
     if not is_configured():
         return 0
     now = time.time()
     with _views_lock:
         if _views["base"] is not None and now - _views["ts"] < _VIEWS_TTL:
-            return _views["base"] + _views["pending"]
+            return max(_views["base"], _VIEWS_START) + _views["pending"]
     try:
         _ws, _row, current = _views_sheet_row()
         with _views_lock:
             _views["base"] = current
             _views["ts"] = now
-            return current + _views["pending"]
+            return max(current, _VIEWS_START) + _views["pending"]
     except Exception:
         with _views_lock:
             if _views["base"] is not None:
-                return _views["base"] + _views["pending"]
-            return 0
+                return max(_views["base"], _VIEWS_START) + _views["pending"]
+            return _VIEWS_START
 
 
 # ----------------------------------------------------------------------------
