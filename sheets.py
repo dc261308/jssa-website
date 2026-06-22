@@ -672,7 +672,14 @@ def delete_bb_post(post_id):
 # with the service account, then set PHOTOS_FOLDER_ID. We list the newest images
 # and serve their bytes through the app (the files stay private to Drive).
 
-PHOTOS_FOLDER_ID = os.environ.get("PHOTOS_FOLDER_ID", "").strip()
+# The public "game photos" album the upload form feeds into. Normally supplied
+# by the PHOTOS_FOLDER_ID env var, but we fall back to the known album folder so
+# Highlights work even where that var isn't set (e.g. no Render access). This is
+# the same public album the homepage "See all photos" button links to — not a
+# secret. To switch albums, change this id (or set the env var, which wins).
+_DEFAULT_PHOTOS_FOLDER_ID = "12af7Q-8h7Ya-tJv8Gqc0q8vzg7HkWN9zw_l9a0czpRCi7n1bg3oX2uIwfKDeoPkGRS_8dEe1"
+PHOTOS_FOLDER_ID = (os.environ.get("PHOTOS_FOLDER_ID", "").strip()
+                    or _DEFAULT_PHOTOS_FOLDER_ID)
 _DRIVE_SCOPES = ["https://www.googleapis.com/auth/drive.readonly"]
 _PHOTOS_TTL = 300
 _photos_cache = {"ids": None, "ts": 0.0}
