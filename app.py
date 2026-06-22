@@ -82,11 +82,17 @@ def home():
         pred_stats = sheets.prediction_analytics()
     except Exception:
         pred_stats = {}
+    # Count this homepage visit and read the running total to show in the footer.
+    try:
+        sheets.record_home_view()
+        views = sheets.home_view_count()
+    except Exception:
+        views = None
     return render_template("index.html", notice=notice,
                            teams_posted=teams_posted, blackboard=blackboard,
                            photos=photos, board=board, sponsors=sponsor_list,
                            pred_odds=pred_odds, pred_board=pred_board,
-                           pred_stats=pred_stats)
+                           pred_stats=pred_stats, views=views)
 
 
 @app.route("/teams")
@@ -336,8 +342,13 @@ def admin_dashboard():
             notices = sheets.list_notices()
         except Exception as e:
             error = str(e)
+    try:
+        views = sheets.home_view_count()
+    except Exception:
+        views = None
     return render_template("admin/dashboard.html",
-                           configured=configured, notices=notices, error=error)
+                           configured=configured, notices=notices,
+                           error=error, views=views)
 
 
 @app.route("/admin/scores")

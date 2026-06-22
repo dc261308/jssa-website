@@ -99,7 +99,10 @@
     <a class="mtile" href="{{ url_for('admin_communications') }}"><span class="ic">&#9993;</span> Email members</a>
     <a class="mtile" href="https://docs.google.com/spreadsheets/d/1-P4qY84he5_JnMWfypnqYKAw4M4aILpA8CEDsocErfk/edit?gid=2031337563#gid=2031337563" target="_blank" rel="noopener"><span class="ic">&#128196;</span> 2026 Membership List</a>
     <a class="mtile" href="https://docs.google.com/spreadsheets/d/1Z8ukg8IJE3xTEPZzIpI7-itTdLMiPrkLLHR8GoT-Qb8/edit?gid=785407878#gid=785407878" target="_blank" rel="noopener"><span class="ic">&#128221;</span> Member Registrations 2027</a>
-    <a class="mtile" href="https://analytics.google.com" target="_blank" rel="noopener"><span class="ic">&#128202;</span> Website Analytics</a>
+    <div class="mtile" style="cursor:default;flex-direction:column;gap:2px">
+      <span style="font-size:1.4rem;font-weight:700;color:var(--navy);line-height:1.1">&#128064; {{ "{:,}".format(views or 0) }}</span>
+      <span style="font-size:.82rem;color:var(--muted);font-weight:600">Homepage visits</span>
+    </div>
   </div>
 
   <h2 style="margin-top:40px">Posted updates</h2>

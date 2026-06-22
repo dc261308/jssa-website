@@ -1102,6 +1102,107 @@ def delete_board_member(member_id):
 
 
 # ----------------------------------------------------------------------------
+# Homepage visit counter — a simple public "how many people came" number
+# ----------------------------------------------------------------------------
+# Lives on a "SiteStats" tab in the same JSSA Website Content sheet (auto-created
+# if missing) as a single row: metric=homepage_views, value=<count>. The Google
+# Sheet IS the permanent store, so the number survives restarts and deploys.
+#
+# We never read/write the sheet on every page view (too slow, and it would burn
+# through Google's API quota). Instead each visit just bumps an in-memory tally;
+# a background thread adds those buffered views to the sheet every so often. The
+# number shown on the page is the saved total plus anything not yet written.
+
+SITESTATS_TAB = "SiteStats"
+STATS_HEADERS = ["metric", "value"]
+_VIEWS_METRIC = "homepage_views"
+
+_views_lock = threading.Lock()
+_views = {"base": None, "pending": 0, "ts": 0.0, "flushed_ts": 0.0,
+          "flushing": False}
+_VIEWS_TTL = 300            # re-read the saved total from the sheet at most every 5 min
+_VIEWS_FLUSH_EVERY = 10     # write to the sheet once this many new views pile up
+_VIEWS_FLUSH_SECONDS = 120  # ...or this long has passed with views still buffered
+
+
+def _views_sheet_row():
+    """Return (worksheet, row_number, current_value) for the homepage_views row,
+    creating the tab and/or the row (starting at 0) if they don't exist yet."""
+    ws = _simple_worksheet(SITESTATS_TAB, STATS_HEADERS)
+    records = ws.get_all_records(expected_headers=STATS_HEADERS)
+    for i, rec in enumerate(records):
+        if str(rec.get("metric")).strip() == _VIEWS_METRIC:
+            return ws, i + 2, _to_int(rec.get("value"))
+    ws.append_row([_VIEWS_METRIC, 0], value_input_option="USER_ENTERED")
+    return ws, len(records) + 2, 0
+
+
+def _flush_views():
+    """Background worker: add the buffered views to the sheet's saved total.
+    On any failure the buffered count is kept so we try again on the next view."""
+    try:
+        with _views_lock:
+            pending = _views["pending"]
+            _views["pending"] = 0
+        if pending <= 0:
+            return
+        try:
+            ws, row, current = _views_sheet_row()
+            new_total = current + pending
+            ws.update_cell(row, STATS_HEADERS.index("value") + 1, new_total)
+            with _views_lock:
+                _views["base"] = new_total
+                _views["ts"] = time.time()
+                _views["flushed_ts"] = time.time()
+        except Exception:
+            with _views_lock:
+                _views["pending"] += pending  # put it back; retry later
+    finally:
+        with _views_lock:
+            _views["flushing"] = False
+
+
+def record_home_view():
+    """Count one homepage visit. Buffers in memory and saves to the sheet in the
+    background, so it never slows the page down or hammers the Google API."""
+    if not is_configured():
+        return
+    now = time.time()
+    start_flush = False
+    with _views_lock:
+        _views["pending"] += 1
+        due = (_views["pending"] >= _VIEWS_FLUSH_EVERY or
+               now - _views["flushed_ts"] >= _VIEWS_FLUSH_SECONDS)
+        if due and not _views["flushing"]:
+            _views["flushing"] = True
+            start_flush = True
+    if start_flush:
+        threading.Thread(target=_flush_views, daemon=True).start()
+
+
+def home_view_count():
+    """Total homepage visits to display: the saved total plus any buffered views
+    not yet written. Returns 0 if the content sheet isn't configured."""
+    if not is_configured():
+        return 0
+    now = time.time()
+    with _views_lock:
+        if _views["base"] is not None and now - _views["ts"] < _VIEWS_TTL:
+            return _views["base"] + _views["pending"]
+    try:
+        _ws, _row, current = _views_sheet_row()
+        with _views_lock:
+            _views["base"] = current
+            _views["ts"] = now
+            return current + _views["pending"]
+    except Exception:
+        with _views_lock:
+            if _views["base"] is not None:
+                return _views["base"] + _views["pending"]
+            return 0
+
+
+# ----------------------------------------------------------------------------
 # Division rosters — the league's master member list, grouped by division
 # ----------------------------------------------------------------------------
 # Lives on the same schedule spreadsheet as the game-day teams. We locate the
