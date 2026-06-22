@@ -250,6 +250,14 @@
     color: var(--gold); background: rgba(245,197,24,.1);
     border: 1px solid rgba(245,197,24,.25); padding: 10px 20px; border-radius: 10px;
   }
+  .not-posted .np-actions { display: flex; flex-wrap: wrap; gap: 14px; justify-content: center; margin-top: 26px; }
+  .not-posted .np-btn {
+    font-family: var(--display); font-weight: 800; font-size: 1.05rem;
+    padding: 15px 28px; border-radius: 12px; color: #fff; transition: opacity .15s;
+  }
+  .not-posted .np-btn:hover { opacity: .9; color: #fff; }
+  .not-posted .np-btn.schedule { background: #2b5bd0; }
+  .not-posted .np-btn.signup { background: #d8262b; }
 
   /* Back */
   .backrow { margin-top: 36px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,.07); text-align: center; }
@@ -344,8 +352,12 @@
     <div class="not-posted">
       <div class="icon">📋</div>
       <h2>Rosters Not Posted Yet</h2>
-      <p>Game day rosters for the next pickup game will be posted here between <strong style="color:#fff">3 PM and 4 PM</strong> the day before each game.</p>
-      <p style="margin-top:14px">Games are held every <strong style="color:#fff">Monday, Wednesday, and Friday</strong> at Maplewood Park. Check back soon!</p>
+      <p>Game day rosters for the next pickup game are posted here between <strong style="color:#fff">3 PM and 4 PM</strong> the day before each game.</p>
+      <p style="margin-top:14px">Games run every <strong style="color:#fff">Monday, Wednesday &amp; Friday</strong>, and new players <strong style="color:#fff">55 and over</strong> are always welcome. Check the schedule for game times and locations, then sign up to get in the next game!</p>
+      <div class="np-actions">
+        <a class="np-btn schedule" href="https://docs.google.com/spreadsheets/d/1oHgGae0aXVVsr7t9hmDmoLxZWO5p9rLFPebSsXoFfAA/edit?gid=883277822#gid=883277822" target="_blank" rel="noopener">📅 View the Schedule</a>
+        <a class="np-btn signup" href="https://script.google.com/macros/s/AKfycbzLLz9E-qjJwXbgAkaGjhH0PT_3oa13uzrl9T5dT1omGCL6Ocw1lYELg8xFBM7zuapN7g/exec">✍️ Sign Up for Pickup</a>
+      </div>
       <span class="timing">⏰ Check back between 3–4 PM the day before</span>
     </div>
 
