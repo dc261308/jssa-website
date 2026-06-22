@@ -106,8 +106,11 @@ def home():
 
 @app.route("/teams")
 def teams():
+    # The Website Controls "Game Day Button = OFF" switch fully un-publishes:
+    # it hides the homepage button AND makes this page read "not posted yet",
+    # so a finished test doesn't leave teams on the site.
     try:
-        data = sheets.game_day_teams()
+        data = None if sheets.roster_button_mode() == "OFF" else sheets.game_day_teams()
     except Exception:
         data = None
     return render_template("teams.html", teams=data)
