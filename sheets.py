@@ -816,8 +816,10 @@ def highlights_debug():
     """Non-sensitive snapshot of what the service account sees in the upload
     folder, for troubleshooting. Deliberately omits file/folder ids, names and
     keys — just enough (counts, file types, dates) to spot the problem."""
-    out = {"configured": photos_configured(), "parent_folders": 0,
-           "images_found": 0, "files": []}
+    out = {"configured": photos_configured(),
+           "has_folder_id": bool(PHOTOS_FOLDER_ID),
+           "has_service_account": bool(_SA_JSON),
+           "parent_folders": 0, "images_found": 0, "files": []}
     if not photos_configured():
         return out
     try:
