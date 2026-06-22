@@ -676,6 +676,14 @@ PHOTOS_FOLDER_ID = os.environ.get("PHOTOS_FOLDER_ID", "").strip()
 _DRIVE_SCOPES = ["https://www.googleapis.com/auth/drive.readonly"]
 _PHOTOS_TTL = 300
 _photos_cache = {"ids": None, "ts": 0.0}
+# id -> {"mime": ..., "thumb": ...}, refreshed whenever we re-list the folder.
+_photos_meta = {}
+
+# Image types every browser can render directly. Anything else (notably the
+# HEIC/HEIF that iPhones produce by default) is served via Drive's auto-made
+# JPEG thumbnail instead, so those photos still show up on the site.
+_WEB_IMAGE_MIMES = {"image/jpeg", "image/jpg", "image/png",
+                    "image/gif", "image/webp", "image/bmp"}
 
 
 def photos_configured():
@@ -691,6 +699,37 @@ def _drive_creds():
     return creds
 
 
+def _photo_parent_ids(creds):
+    """The upload folder plus its immediate subfolders.
+
+    Google Forms file-upload questions don't drop photos straight into the
+    responses folder — they nest them inside a per-question SUBFOLDER. So we
+    search the configured folder AND one level of subfolders, which catches the
+    uploads no matter which layout the form ends up using.
+    """
+    parents = [PHOTOS_FOLDER_ID]
+    try:
+        import requests
+        params = {
+            "q": ("'%s' in parents and "
+                  "mimeType = 'application/vnd.google-apps.folder' and "
+                  "trashed = false") % PHOTOS_FOLDER_ID,
+            "pageSize": 50,
+            "fields": "files(id)",
+            "supportsAllDrives": "true",
+            "includeItemsFromAllDrives": "true",
+        }
+        r = requests.get("https://www.googleapis.com/drive/v3/files",
+                         params=params,
+                         headers={"Authorization": "Bearer " + creds.token},
+                         timeout=12)
+        if r.status_code == 200:
+            parents += [f["id"] for f in r.json().get("files", [])]
+    except Exception:
+        pass
+    return parents
+
+
 def highlight_photo_ids(limit=12):
     """Drive file ids of the newest images in the upload folder, newest first.
     Cached; last good value kept on error."""
@@ -700,15 +739,18 @@ def highlight_photo_ids(limit=12):
             return _photos_cache["ids"]
     try:
         ids = []
+        meta = {}
         if photos_configured():
             import requests
             creds = _drive_creds()
+            parents = _photo_parent_ids(creds)
+            clause = " or ".join("'%s' in parents" % p for p in parents)
             params = {
-                "q": ("'%s' in parents and mimeType contains 'image/' "
-                      "and trashed = false") % PHOTOS_FOLDER_ID,
+                "q": ("(%s) and mimeType contains 'image/' "
+                      "and trashed = false") % clause,
                 "orderBy": "createdTime desc",
                 "pageSize": limit,
-                "fields": "files(id)",
+                "fields": "files(id,mimeType,thumbnailLink)",
                 "supportsAllDrives": "true",
                 "includeItemsFromAllDrives": "true",
             }
@@ -717,10 +759,16 @@ def highlight_photo_ids(limit=12):
                              headers={"Authorization": "Bearer " + creds.token},
                              timeout=12)
             if r.status_code == 200:
-                ids = [f["id"] for f in r.json().get("files", [])]
+                files = r.json().get("files", [])
+                ids = [f["id"] for f in files]
+                meta = {f["id"]: {"mime": (f.get("mimeType") or "").lower(),
+                                  "thumb": f.get("thumbnailLink") or ""}
+                        for f in files}
         with _lock:
             _photos_cache["ids"] = ids
             _photos_cache["ts"] = now
+            _photos_meta.clear()
+            _photos_meta.update(meta)
         return ids
     except Exception:
         return _photos_cache["ids"] or []
@@ -728,14 +776,31 @@ def highlight_photo_ids(limit=12):
 
 def fetch_photo_bytes(file_id):
     """Return (bytes, content_type) for one image id, or (None, None).
-    Only serves ids that are currently in the highlights set (safety)."""
+    Only serves ids that are currently in the highlights set (safety).
+
+    JPEG/PNG/etc. stream straight from Drive (unchanged). HEIC/HEIF and other
+    formats browsers can't display are served as Drive's JPEG thumbnail so the
+    photo still renders instead of showing as a broken image.
+    """
     if not photos_configured():
         return None, None
     if file_id not in highlight_photo_ids():
         return None, None
+    info = _photos_meta.get(file_id, {})
+    mime = info.get("mime", "")
+    thumb = info.get("thumb", "")
     try:
         import requests
         creds = _drive_creds()
+        if mime and mime not in _WEB_IMAGE_MIMES and thumb:
+            # Ask Drive for a large version of its generated JPEG thumbnail.
+            big = re.sub(r"=s\d+(-c)?$", "=s1600", thumb)
+            t = requests.get(big,
+                             headers={"Authorization": "Bearer " + creds.token},
+                             timeout=20)
+            if t.status_code == 200 and t.content:
+                return t.content, t.headers.get("Content-Type", "image/jpeg")
+            # Thumbnail unavailable — fall through to the raw bytes below.
         r = requests.get("https://www.googleapis.com/drive/v3/files/%s" % file_id,
                          params={"alt": "media", "supportsAllDrives": "true"},
                          headers={"Authorization": "Bearer " + creds.token},
@@ -745,6 +810,50 @@ def fetch_photo_bytes(file_id):
         return r.content, r.headers.get("Content-Type", "image/jpeg")
     except Exception:
         return None, None
+
+
+def highlights_debug():
+    """Non-sensitive snapshot of what the service account sees in the upload
+    folder, for troubleshooting. Deliberately omits file/folder ids, names and
+    keys — just enough (counts, file types, dates) to spot the problem."""
+    out = {"configured": photos_configured(), "parent_folders": 0,
+           "images_found": 0, "files": []}
+    if not photos_configured():
+        return out
+    try:
+        import requests
+        creds = _drive_creds()
+        parents = _photo_parent_ids(creds)
+        out["parent_folders"] = len(parents)
+        clause = " or ".join("'%s' in parents" % p for p in parents)
+        params = {
+            "q": ("(%s) and mimeType contains 'image/' "
+                  "and trashed = false") % clause,
+            "orderBy": "createdTime desc",
+            "pageSize": 25,
+            "fields": "files(name,mimeType,createdTime)",
+            "supportsAllDrives": "true",
+            "includeItemsFromAllDrives": "true",
+        }
+        r = requests.get("https://www.googleapis.com/drive/v3/files",
+                         params=params,
+                         headers={"Authorization": "Bearer " + creds.token},
+                         timeout=12)
+        out["api_status"] = r.status_code
+        if r.status_code == 200:
+            files = r.json().get("files", [])
+            out["images_found"] = len(files)
+            out["files"] = [
+                {"ext": (f.get("name") or "").rsplit(".", 1)[-1].lower()[:8],
+                 "type": f.get("mimeType"),
+                 "created": f.get("createdTime")}
+                for f in files
+            ]
+        else:
+            out["api_body"] = r.text[:300]
+    except Exception as e:
+        out["error"] = type(e).__name__
+    return out
 
 
 # ----------------------------------------------------------------------------
