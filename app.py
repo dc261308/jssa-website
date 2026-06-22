@@ -280,6 +280,16 @@ def highlights_photo(file_id):
     return resp
 
 
+@app.route("/highlights/debug")
+def highlights_debug():
+    """Read-only check of what the photo upload folder actually contains —
+    counts and file types, no ids or names. Handy when uploads aren't showing."""
+    try:
+        return jsonify(sheets.highlights_debug())
+    except Exception as e:
+        return jsonify(error=type(e).__name__), 500
+
+
 # Interior content pages (rebuilt natively from the league's Google Docs).
 PAGES = {
     "bylaws":          "JSSA Bylaws",
