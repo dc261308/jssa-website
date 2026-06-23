@@ -447,6 +447,31 @@
     .qb-btn.pickup{background:var(--red);border-color:var(--red);color:#fff}
     .qb-btn.pickup .qb-go{color:#fff;opacity:.92}
     .qb-btn.pickup:hover{border-color:var(--navy)}
+    /* Live "next pickup game" card (middle slot) */
+    .qb-live{display:flex;flex-direction:column;align-items:center;text-align:center;
+      gap:5px;min-height:150px;padding:20px 18px;border-radius:18px;background:#fff;
+      border:2px solid #c2cfe4;box-shadow:0 6px 20px rgba(22,35,63,.12);color:var(--navy)}
+    .qb-live .ql-eyebrow{font-family:var(--display);font-weight:800;letter-spacing:.06em;
+      text-transform:uppercase;font-size:.84rem;color:var(--blue)}
+    .qb-live .ql-date{font-family:var(--display);font-weight:800;font-size:1.32rem;line-height:1.12}
+    .qb-live .ql-where{font-size:.98rem;color:#41506b;font-weight:600}
+    .qb-live .ql-cd{margin:9px 0 2px}
+    .qb-live .ql-num{font-family:var(--display);font-weight:800;font-size:1.85rem;color:var(--navy);
+      background:#fff3cd;border:2px solid #f5c518;border-radius:12px;padding:3px 14px;
+      display:inline-block;line-height:1.15;min-width:120px}
+    .qb-live .ql-closed{font-family:var(--display);font-weight:800;color:var(--red);font-size:1.12rem}
+    .qb-live .ql-clocklabel{font-size:.82rem;color:#5a6b88;font-weight:600;line-height:1.2}
+    .qb-live .ql-total{font-family:var(--display);font-weight:800;font-size:1.18rem;margin-top:8px}
+    .qb-live .ql-divs{display:flex;gap:7px;justify-content:center;flex-wrap:wrap;margin:3px 0 2px}
+    .qb-live .ql-chip{font-weight:800;font-size:.95rem;border-radius:999px;padding:3px 12px;
+      border:2px solid;background:#fff}
+    .qb-live .ql-chip.red{color:var(--red);border-color:var(--red)}
+    .qb-live .ql-chip.white{color:#4a5670;border-color:#9aa7c0}
+    .qb-live .ql-chip.blue{color:var(--blue);border-color:var(--blue)}
+    .qb-live .ql-links{display:flex;flex-direction:column;gap:4px;margin-top:10px;width:100%}
+    .qb-live .ql-links a{font-family:var(--display);font-weight:700;font-size:1.02rem;color:var(--blue)}
+    .qb-live .ql-links a:hover{text-decoration:underline}
+    .qb-live .ql-links a.muted{color:#5a6b88;font-weight:600;font-size:.92rem}
     @media(max-width:760px){.qb-grid{grid-template-columns:1fr}}
   </style>
   <div class="wrap">
@@ -456,11 +481,31 @@
         <span class="qb-txt">Sign Up for Pickup</span>
         <span class="qb-go">Get in the next game →</span>
       </a>
+      {% if pickup %}
+      <div class="qb-btn qb-live">
+        <span class="ql-eyebrow">⚾ Next Pickup Game</span>
+        <span class="ql-date">{{ pickup.weekday }} · {{ pickup.date_human }}</span>
+        <span class="ql-where">{{ pickup.field }}{% if pickup.time %} · {{ pickup.time }}{% endif %}</span>
+        <div class="ql-cd" data-deadline="{{ pickup.deadline_iso }}"><span class="ql-num">—</span></div>
+        <span class="ql-clocklabel">until signups close<br>({{ pickup.deadline_human }})</span>
+        <span class="ql-total">{{ pickup.counts.TOTAL }} signed up</span>
+        <div class="ql-divs">
+          <span class="ql-chip red">🔴 {{ pickup.counts.RED }}</span>
+          <span class="ql-chip white">⚪ {{ pickup.counts.WHITE }}</span>
+          <span class="ql-chip blue">🔵 {{ pickup.counts.BLUE }}</span>
+        </div>
+        <div class="ql-links">
+          <a href="/pickup">See who's signed up →</a>
+          <a class="muted" href="{{ pickup.schedule_url }}" target="_blank" rel="noopener">Full schedule grid →</a>
+        </div>
+      </div>
+      {% else %}
       <a class="qb-btn" href="https://docs.google.com/spreadsheets/d/1oHgGae0aXVVsr7t9hmDmoLxZWO5p9rLFPebSsXoFfAA/edit?gid=883277822#gid=883277822" target="_blank" rel="noopener">
         <span class="qb-ic">📅</span>
         <span class="qb-txt">Pickup Game Schedule</span>
         <span class="qb-go">See the dates →</span>
       </a>
+      {% endif %}
       <a class="qb-btn" href="/teams">
         <span class="qb-ic">📋</span>
         <span class="qb-txt">Pickup Game Rosters</span>
@@ -468,6 +513,38 @@
       </a>
     </div>
   </div>
+  <script>
+  /* Live countdown to the pickup-game signup deadline. Reads the deadline (with
+     its Eastern-time offset baked in) from the card, so it stays correct in any
+     visitor's timezone. Falls back gracefully if the card isn't on the page. */
+  (function(){
+    var box = document.querySelector('.qb-live .ql-cd');
+    if(!box) return;
+    var target = new Date(box.getAttribute('data-deadline')).getTime();
+    var num = box.querySelector('.ql-num');
+    var label = document.querySelector('.qb-live .ql-clocklabel');
+    if(isNaN(target)){ box.style.display='none'; if(label) label.style.display='none'; return; }
+    function tick(){
+      var diff = target - Date.now();
+      if(diff <= 0){
+        box.innerHTML = '<span class="ql-closed">⏰ Signups are closed</span>';
+        if(label){ label.textContent = 'for this game'; }
+        return;
+      }
+      var s = Math.floor(diff/1000);
+      var d = Math.floor(s/86400); s -= d*86400;
+      var h = Math.floor(s/3600);  s -= h*3600;
+      var m = Math.floor(s/60);    s -= m*60;
+      if(num){
+        num.textContent = d > 0 ? (d+'d '+h+'h '+m+'m')
+                        : h > 0 ? (h+'h '+m+'m '+s+'s')
+                                : (m+'m '+s+'s');
+      }
+      setTimeout(tick, 1000);
+    }
+    tick();
+  })();
+  </script>
 </section>
 
 <!-- ============ PREDICTION CONTEST ============ -->

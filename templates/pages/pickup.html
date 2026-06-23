@@ -1,0 +1,139 @@
+{% extends "page_base.html" %}
+{% block eyebrow %}Pickup Games{% endblock %}
+{% block sub %}<p class="sub">A live, preliminary look at who's signed up for the next pickup game. This list updates on its own as new signups come in.</p>{% endblock %}
+{% block body %}
+<style>
+  html{font-size:112.5%}  /* larger, easier-to-read text */
+  .btn-red{background:var(--red);color:#fff}.btn-red:hover{background:#b81f24}
+
+  /* Next-game banner */
+  .ng-banner{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;
+    gap:18px;background:var(--navy);color:#fff;border-radius:16px;padding:22px 26px}
+  .ng-eyebrow{font-family:var(--display);font-weight:800;letter-spacing:.08em;text-transform:uppercase;
+    font-size:.86rem;color:#f5c518}
+  .ng-date{font-family:var(--display);font-weight:900;color:#fff;font-size:1.9rem;margin:4px 0 2px;letter-spacing:-.01em}
+  .ng-where{color:#cdd7ea;font-size:1.04rem;font-weight:600;margin:0}
+  .ng-count{text-align:center;line-height:1.05}
+  .ng-big{display:block;font-family:var(--display);font-weight:900;font-size:3.1rem;color:#fff}
+  .ng-biglabel{display:block;font-size:.92rem;color:#cdd7ea;font-weight:600}
+
+  /* Countdown */
+  .ng-clock{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:10px;
+    background:#fff7da;border:2px solid #f5c518;border-radius:14px;padding:14px 18px;margin:16px 0 6px;text-align:center}
+  .ng-clocklead{font-family:var(--display);font-weight:700;color:var(--navy);font-size:1.05rem}
+  .ng-num{font-family:var(--display);font-weight:900;color:var(--navy);font-size:1.55rem;
+    background:#fff;border:2px solid #f5c518;border-radius:10px;padding:3px 14px;min-width:150px}
+  .ng-deadline{flex-basis:100%;color:#7a6a1f;font-size:.92rem;font-weight:600}
+  .ng-closed{font-family:var(--display);font-weight:900;color:var(--red);font-size:1.2rem}
+
+  /* Division legend + columns */
+  .ng-legend{display:flex;gap:16px;justify-content:center;flex-wrap:wrap;margin:18px 0 6px;color:var(--muted);font-size:.96rem}
+  .ng-legend b{color:var(--navy);font-family:var(--display)}
+  .rosters{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:14px}
+  @media(max-width:760px){.rosters{grid-template-columns:1fr;max-width:460px;margin-left:auto;margin-right:auto}
+    .ng-date{font-size:1.6rem}.ng-big{font-size:2.6rem}}
+  .divcard{border:1px solid var(--line);border-radius:14px;overflow:hidden;background:#fff;display:flex;flex-direction:column}
+  .divcard .head{padding:13px 16px;display:flex;align-items:center;justify-content:space-between;color:#fff}
+  .divcard .head h3{margin:0;font-size:1.12rem;color:#fff}
+  .divcard .head .count{font-family:var(--display);font-weight:800;font-size:.9rem;background:rgba(255,255,255,.22);padding:2px 10px;border-radius:999px}
+  .divcard.red .head{background:var(--red)}
+  .divcard.blue .head{background:var(--blue)}
+  .divcard.white .head{background:#54607a}
+  .roster{list-style:none;margin:0;padding:4px 0}
+  .roster li{display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding:8px 16px;border-top:1px solid var(--line)}
+  .roster li:first-child{border-top:0}
+  .roster .pn{font-family:var(--display);font-weight:600;color:var(--navy);font-size:1rem}
+  .roster .pp{font-size:.8rem;color:var(--muted);white-space:nowrap}
+  .ros-empty{padding:14px 16px;color:var(--muted)}
+  .ng-note{color:var(--muted);font-size:.95rem;margin:22px 0 0;text-align:center}
+  .ng-none{text-align:center;padding:18px 0}
+  .ng-none h2{font-size:1.5rem;color:var(--navy);border:0;padding:0;margin:0 0 10px}
+</style>
+
+{% if game %}
+{% set divs = [('RED','red','Red'), ('WHITE','white','White'), ('BLUE','blue','Blue')] %}
+<div class="ng-banner">
+  <div class="ng-when">
+    <span class="ng-eyebrow">⚾ Next Game</span>
+    <div class="ng-date">{{ game.weekday }}, {{ game.date_human }}</div>
+    <p class="ng-where">{{ game.field }}{% if game.time %} · First pitch {{ game.time }}{% endif %}</p>
+  </div>
+  <div class="ng-count">
+    <span class="ng-big">{{ game.counts.TOTAL }}</span>
+    <span class="ng-biglabel">signed up so far</span>
+  </div>
+</div>
+
+<div class="ng-clock" data-deadline="{{ game.deadline_iso }}">
+  <span class="ng-clocklead">⏰ Signups close in</span>
+  <span class="ng-num">—</span>
+  <span class="ng-deadline">Deadline: {{ game.deadline_human }}</span>
+</div>
+
+<p class="ng-legend">
+  <span><b>{{ game.counts.RED }}</b> Red</span>
+  <span><b>{{ game.counts.WHITE }}</b> White</span>
+  <span><b>{{ game.counts.BLUE }}</b> Blue</span>
+</p>
+
+<div class="rosters">
+  {% for key, cls, label in divs %}
+  <div class="divcard {{ cls }}">
+    <div class="head"><h3>{{ label }}</h3><span class="count">{{ game.counts[key] }}</span></div>
+    {% if game.players[key] %}
+    <ul class="roster">
+      {% for p in game.players[key] %}
+      <li><span class="pn">{{ p.name }}</span>{% if p.pos %}<span class="pp">{{ p.pos }}</span>{% endif %}</li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <div class="ros-empty">No one yet — be the first!</div>
+    {% endif %}
+  </div>
+  {% endfor %}
+</div>
+
+<p class="ng-note">This is a preliminary roster. The official teams are drawn up and posted on game day. Not on the list yet? Use the Sign-Up button below.</p>
+
+<script>
+/* Live countdown to the signup deadline (Eastern offset baked into the value). */
+(function(){
+  var box = document.querySelector('.ng-clock');
+  if(!box) return;
+  var target = new Date(box.getAttribute('data-deadline')).getTime();
+  var num = box.querySelector('.ng-num');
+  var lead = box.querySelector('.ng-clocklead');
+  if(isNaN(target)){ box.style.display='none'; return; }
+  function tick(){
+    var diff = target - Date.now();
+    if(diff <= 0){
+      box.innerHTML = '<span class="ng-closed">⏰ Signups are closed for this game</span>';
+      return;
+    }
+    var s = Math.floor(diff/1000);
+    var d = Math.floor(s/86400); s -= d*86400;
+    var h = Math.floor(s/3600);  s -= h*3600;
+    var m = Math.floor(s/60);    s -= m*60;
+    if(num){
+      num.textContent = d > 0 ? (d+'d '+h+'h '+m+'m')
+                      : h > 0 ? (h+'h '+m+'m '+s+'s')
+                              : (m+'m '+s+'s');
+    }
+    setTimeout(tick, 1000);
+  }
+  tick();
+})();
+</script>
+{% else %}
+<div class="ng-none">
+  <h2>No upcoming game posted right now</h2>
+  <p>Check the full schedule for upcoming dates, or sign up to get into the next pickup game.</p>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block footer_btns %}
+<a class="btn btn-red" href="https://script.google.com/macros/s/AKfycbzLLz9E-qjJwXbgAkaGjhH0PT_3oa13uzrl9T5dT1omGCL6Ocw1lYELg8xFBM7zuapN7g/exec">✍️ Sign Up for Pickup</a>
+<a class="btn btn-navy" href="{{ game.schedule_url if game else 'https://docs.google.com/spreadsheets/d/1oHgGae0aXVVsr7t9hmDmoLxZWO5p9rLFPebSsXoFfAA/edit?gid=883277822#gid=883277822' }}" target="_blank" rel="noopener">📅 Full schedule grid</a>
+{% endblock %}
+{% block extra_btns %}<a class="btn btn-ghost" href="/">← Back home</a>{% endblock %}

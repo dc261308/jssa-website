@@ -465,6 +465,216 @@ def roster_button_mode():
 
 
 # ----------------------------------------------------------------------------
+# Pickup Game Schedule — live "next game" preview for the homepage middle card
+# and the /pickup preview page.
+# ----------------------------------------------------------------------------
+# Reads the PUBLIC pickup-game schedule tab (the same grid the middle homepage
+# card links to). Its layout:
+#   * A header block, one COLUMN per game: rows labeled Game Date / Start Time /
+#     Game Field / RED / WHITE / BLUE / TOTAL.
+#   * A player header row: Email | First Name | Last Name | Division | Position |
+#     <one column per game date>.
+#   * One row per player below that, with an "X" under each game date they
+#     signed up for.
+# We only ever READ it, and we NEVER return player emails. Cached briefly so it
+# feels live without hammering the API, and fails safe to None so the homepage
+# card simply falls back to its plain "see the schedule" link.
+
+SCHEDULE_TAB_GID = os.environ.get("SCHEDULE_TAB_GID", "883277822").strip()
+SCHEDULE_URL = ("https://docs.google.com/spreadsheets/d/%s/edit?gid=%s#gid=%s"
+                % (TEAMS_SHEET_ID, SCHEDULE_TAB_GID, SCHEDULE_TAB_GID))
+SIGNUP_DEADLINE_HOUR = 15  # 3:00 PM the day before each game
+
+_schedule_cache = {"data": None, "ts": 0.0}
+_SCHEDULE_TTL = 120  # seconds — 2 min so fresh signups show up quickly
+
+# Eastern time, matching the rest of this file's convention (EDT, UTC-4).
+_EASTERN = datetime.timezone(datetime.timedelta(hours=-4))
+
+
+def _schedule_worksheet():
+    """The public pickup-game schedule tab. Prefer the known gid; fall back to
+    whichever tab carries the player header (First/Last/Division/Position)."""
+    sh = _open_teams_spreadsheet()
+    try:
+        if SCHEDULE_TAB_GID.isdigit():
+            return sh.get_worksheet_by_id(int(SCHEDULE_TAB_GID))
+    except Exception:
+        pass
+    for ws in sh.worksheets():
+        try:
+            for r in ws.get_all_values():
+                low = [_clean(c).lower() for c in r]
+                if "first name" in low and "division" in low and "position" in low:
+                    return ws
+        except Exception:
+            continue
+    return sh.get_worksheet(0)
+
+
+def _parse_schedule_date(label, today):
+    """Turn a 'Wed, June 24' style label into a real date near `today`. The
+    label carries no year, so we pick the year that lands the date closest to
+    today (handles a December->January season rollover). Returns a date or None."""
+    s = _clean(label)
+    if not s:
+        return None
+    if "," in s:
+        s = s.split(",", 1)[1]  # drop the weekday ("Wed, ")
+    s = s.strip()
+    parsed = None
+    for fmt in ("%B %d", "%b %d"):
+        try:
+            parsed = datetime.datetime.strptime(s, fmt)
+            break
+        except ValueError:
+            continue
+    if parsed is None:
+        return None
+    candidates = []
+    for y in (today.year - 1, today.year, today.year + 1):
+        try:
+            candidates.append(parsed.replace(year=y).date())
+        except ValueError:
+            pass  # e.g. Feb 29 in a non-leap year
+    if not candidates:
+        return None
+    return min(candidates, key=lambda d: abs((d - today).days))
+
+
+def _parse_schedule_grid(rows, ref):
+    """Find the next upcoming game and who's signed up, from the raw schedule
+    rows. `ref` is 'now' in Eastern time. Returns the next-game dict or None."""
+    today = ref.date()
+
+    # 1) Locate the player header row and its key columns.
+    phdr = None
+    cols = {}
+    for i, r in enumerate(rows):
+        low = [_clean(c).lower() for c in r]
+        if "first name" in low and "last name" in low and "division" in low:
+            phdr = i
+            cols = {name: ci for ci, name in enumerate(low)}
+            break
+    if phdr is None:
+        return None
+    first_i = cols.get("first name")
+    last_i = cols.get("last name")
+    div_i = cols.get("division")
+    pos_i = cols.get("position", cols.get("preferred positions"))
+    if first_i is None or last_i is None or div_i is None:
+        return None
+    base = max(c for c in (first_i, last_i, div_i, pos_i) if c is not None)
+
+    # 2) Date columns: every labeled column past the player fields.
+    header = rows[phdr]
+    date_cols = []  # (col_index, label, date)
+    for ci in range(base + 1, len(header)):
+        label = _clean(header[ci])
+        if not label:
+            continue
+        d = _parse_schedule_date(label, today)
+        if d is not None:
+            date_cols.append((ci, label, d))
+    if not date_cols:
+        return None
+
+    # 3) Next game = first column dated today or later.
+    upcoming = [dc for dc in date_cols if dc[2] >= today]
+    if not upcoming:
+        return None
+    gc, glabel, gdate = upcoming[0]
+
+    # 4) Start time / field for that column, from the top header block.
+    def block_row(*keys):
+        for r in rows[:phdr]:
+            lbl = ""
+            for c in r:
+                if _clean(c):
+                    lbl = _clean(c).lower()
+                    break
+            if lbl in keys:
+                return r
+        return None
+    time_row = block_row("start time")
+    field_row = block_row("game field", "field")
+    game_time = _clean(time_row[gc]) if time_row and len(time_row) > gc else ""
+    game_field = _clean(field_row[gc]) if field_row and len(field_row) > gc else ""
+
+    # 5) Everyone with an "X" in that column, grouped by division.
+    buckets = {"RED": [], "WHITE": [], "BLUE": []}
+    total = 0
+    for r in rows[phdr + 1:]:
+        if len(r) <= gc or not _clean(r[gc]):
+            continue  # blank cell = not signed up for this game
+        first = _clean(r[first_i]) if len(r) > first_i else ""
+        last = _clean(r[last_i]) if len(r) > last_i else ""
+        name = (first + " " + last).strip()
+        if not name:
+            continue
+        div = _norm_div(r[div_i]) if len(r) > div_i else ""
+        pos = _clean(r[pos_i]) if pos_i is not None and len(r) > pos_i else ""
+        total += 1
+        if div in buckets:
+            buckets[div].append({"name": name, "first": first,
+                                 "last": last, "pos": pos})
+    for d in buckets:
+        buckets[d].sort(key=lambda e: (e["last"].lower(), e["first"].lower()))
+
+    counts = {"RED": len(buckets["RED"]), "WHITE": len(buckets["WHITE"]),
+              "BLUE": len(buckets["BLUE"]), "TOTAL": total}
+
+    # 6) Signup deadline: 3:00 PM Eastern the day BEFORE the game.
+    deadline = (datetime.datetime(gdate.year, gdate.month, gdate.day,
+                                  SIGNUP_DEADLINE_HOUR, 0, 0, tzinfo=_EASTERN)
+                - datetime.timedelta(days=1))
+
+    return {
+        "date_label": glabel,
+        "weekday": gdate.strftime("%A"),
+        "date_human": gdate.strftime("%B ") + str(gdate.day),
+        "date_iso": gdate.isoformat(),
+        "time": game_time,
+        "field": game_field,
+        "deadline_iso": deadline.isoformat(),
+        "deadline_human": (deadline.strftime("%A, %B ") + str(deadline.day)
+                           + " at 3:00 PM"),
+        "deadline_passed": ref >= deadline,
+        "counts": counts,
+        "players": buckets,
+        "schedule_url": SCHEDULE_URL,
+    }
+
+
+def pickup_next_game():
+    """Next upcoming pickup game with its live signups, or None. Shaped for both
+    the homepage middle card and the /pickup preview page:
+        {date_label, weekday, date_human, date_iso, time, field,
+         deadline_iso, deadline_human, deadline_passed,
+         counts: {RED, WHITE, BLUE, TOTAL},
+         players: {RED:[{name,first,last,pos}], WHITE:[...], BLUE:[...]},
+         schedule_url}
+    Cached briefly; last good value kept on a hiccup."""
+    now = time.time()
+    with _lock:
+        c = _schedule_cache
+        if c["data"] is not None and now - c["ts"] < _SCHEDULE_TTL:
+            return c["data"]
+    try:
+        data = None
+        if teams_is_configured():
+            ws = _schedule_worksheet()
+            rows = ws.get_all_values()
+            data = _parse_schedule_grid(rows, datetime.datetime.now(tz=_EASTERN))
+        with _lock:
+            _schedule_cache["data"] = data
+            _schedule_cache["ts"] = now
+        return data
+    except Exception:
+        return _schedule_cache["data"]
+
+
+# ----------------------------------------------------------------------------
 # Blackboard posts (homepage "Blackboard" section)
 # ----------------------------------------------------------------------------
 # Lives on a "Blackboard" tab in the same JSSA Website Content sheet, auto-created
