@@ -353,6 +353,11 @@
     .hero .wrap{padding:44px 20px 40px}
     .topbanner .blink{display:none}
   }
+  @media(max-width:480px){
+    /* Shrink the big hero title on phones so it doesn't run off the screen.
+       Scales with the screen width (smaller phone = smaller title). */
+    .hero h1{font-size:clamp(1.35rem,6.5vw,2rem);letter-spacing:.01em}
+  }
 </style>
 </head>
 <body>
