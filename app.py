@@ -97,13 +97,6 @@ def home():
         league_acc = sheets.prediction_league_accuracy()
     except Exception:
         league_acc = None
-    # Live "next pickup game" preview for the middle quick-action card. None when
-    # there's no upcoming game or the sheet hiccups -> the card shows its plain
-    # "see the schedule" link instead.
-    try:
-        pickup = sheets.pickup_next_game()
-    except Exception:
-        pickup = None
     # Count this homepage visit and read the running total to show in the footer.
     try:
         sheets.record_home_view()
@@ -115,7 +108,7 @@ def home():
                            photos=photos, board=board, sponsors=sponsor_list,
                            pred_odds=pred_odds, pred_board=pred_board,
                            pred_stats=pred_stats, league_acc=league_acc,
-                           pickup=pickup, views=views)
+                           views=views)
 
 
 @app.route("/pickup")
