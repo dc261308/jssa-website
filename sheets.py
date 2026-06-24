@@ -2119,6 +2119,11 @@ def prediction_games_for_scoring():
                 "picks_away": t["V"],
                 "picks_total": t["total"],
             })
+        # Most recent game day first, so scoring the newest games doesn't mean
+        # scrolling past the whole season. Stable sort keeps each day's fields in
+        # their sheet order. Each game keeps its own 'row', so saving a winner
+        # still writes to the correct sheet row regardless of display order.
+        out.sort(key=lambda g: _norm_pred_date(g["date"]), reverse=True)
         return out
     except Exception:
         return []
