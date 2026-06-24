@@ -579,8 +579,15 @@ def _parse_schedule_grid(rows, ref):
     if not date_cols:
         return None
 
-    # 3) Next game = first column dated today or later.
-    upcoming = [dc for dc in date_cols if dc[2] >= today]
+    # 3) Next game = the first game still ahead of us. A game stays "next" until
+    #    NOON Eastern on its own game day (the same cutoff the Game Day roster
+    #    button uses). After noon on game day it's treated as finished, so the
+    #    page rolls forward to the next game and counts down to that deadline.
+    def _still_upcoming(d):
+        if d > today:
+            return True
+        return d == today and ref.hour < 12
+    upcoming = [dc for dc in date_cols if _still_upcoming(dc[2])]
     if not upcoming:
         return None
     gc, glabel, gdate = upcoming[0]
