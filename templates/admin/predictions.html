@@ -26,6 +26,14 @@
   .pgside button.won{background:#e8f6ee;border-color:#1a7f4b;color:#136b3d}
   .pgside button.won .role{color:#1a7f4b}
   .pgside button.won::after{content:" ✓ Winner";font-family:var(--body);font-weight:700;font-size:.8rem;color:#1a7f4b}
+  .pgwhen .donetag.tie{background:#fff3cd;color:#8a6d1f}
+  .pgtie{margin-top:12px}
+  .pgtie button{width:100%;min-height:48px;border:2px dashed #c7b15a;background:#fffef6;
+    border-radius:12px;cursor:pointer;font-family:var(--display);font-weight:800;color:#7a6a1f;
+    font-size:1rem;padding:10px 16px;transition:border-color .12s,background .12s,transform .1s}
+  .pgtie button:hover{transform:translateY(-2px);border-color:#b8972f;background:#fff8e0}
+  .pgtie button.tied{background:#fff3cd;border-style:solid;border-color:#caa83a;color:#6a5a14}
+  .pgtie button.tied::after{content:" ✓ Recorded";font-family:var(--body);font-weight:700;font-size:.8rem}
   @media(max-width:560px){.pgside{min-width:100%}}
 </style>
 
@@ -44,7 +52,8 @@
   <div class="pgame">
     <div class="pgwhen">{{ g.date }}{% if g.field %} · {{ g.field }}{% endif %}
       {% if g.winner == 'H' %}<span class="donetag">Winner: {{ g.home }} (Home)</span>
-      {% elif g.winner == 'V' %}<span class="donetag">Winner: {{ g.away }} (Visitor)</span>{% endif %}
+      {% elif g.winner == 'V' %}<span class="donetag">Winner: {{ g.away }} (Visitor)</span>
+      {% elif g.winner == 'T' %}<span class="donetag tie">Tie — no winner</span>{% endif %}
       {% if g.picks_total %}<span style="margin-left:8px">· {{ g.picks_total }} pick{{ '' if g.picks_total == 1 else 's' }} in</span>{% endif %}
     </div>
     <div class="pgrow">
@@ -70,6 +79,13 @@
           </button>
         </form>
       </div>
+    </div>
+    <div class="pgtie">
+      <form method="post" action="{{ url_for('admin_predictions_save') }}">
+        <input type="hidden" name="row" value="{{ g.row }}">
+        <input type="hidden" name="winner" value="T">
+        <button type="submit" class="tiebtn {{ 'tied' if g.winner == 'T' }}">🤝 Game ended in a tie</button>
+      </form>
     </div>
   </div>
   {% endfor %}

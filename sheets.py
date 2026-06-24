@@ -2130,11 +2130,13 @@ def prediction_games_for_scoring():
 
 
 def set_prediction_winner(row, winner):
-    """Write the winning side ('H' or 'V') into the Prediction Games tab's
-    'Winner' column for one game row. The sheet's own formulas then score the
-    Picks tab, the matrix and the leaderboard. Returns True on success."""
+    """Write the result ('H' Home, 'V' Visitor, or 'T' Tie) into the Prediction
+    Games tab's 'Winner' column for one game row. The sheet's own formulas then
+    score the Picks tab, the matrix and the leaderboard. A 'T' matches no H/V
+    pick, so a tie counts as a miss for everyone who picked that game.
+    Returns True on success."""
     winner = str(winner or "").strip().upper()[:1]
-    if winner not in ("H", "V"):
+    if winner not in ("H", "V", "T"):
         return False
     try:
         if not (CONTROL_SHEET_ID and _SA_JSON):
