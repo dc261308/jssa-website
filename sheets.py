@@ -1957,69 +1957,105 @@ def _slug(s):
     return re.sub(r"[^a-z0-9]+", "-", str(s or "").strip().lower()).strip("-")
 
 
+def _is_name_col(h):
+    """A response column that holds a person's name (not the team name)."""
+    return ("name" in h) and ("team" not in h)
+
+
 def _parse_profiles(tabs):
-    """Merge the questionnaire + photo form tabs into {slug: profile}. The
-    questionnaire tab carries the Q&A (it has a Division column; the roster
-    Players tab uses 'player first name', so it won't be confused for it). The
-    photo tab carries the Drive photo (it has a column containing 'photo')."""
+    """Merge the questionnaire + photo form tabs into {slug: profile}, matched to
+    the roster by name. Handles BOTH form styles: the simple typed forms
+    (First Name / Last Name) and the cascading dropdown forms (Your Division ->
+    'Your Name (Red/White/Blue)'). Photo tab = a form tab with a 'photo' column."""
     out = {}
 
     def find(pred):
-        for _title, vals in tabs:
-            if not vals:
-                continue
-            low = [_clean(c).lower() for c in vals[0]]
-            if pred(low):
-                return vals, {n: i for i, n in enumerate(low)}
-        return None, None
+        for _t, vals in tabs:
+            if vals and pred([_clean(c).lower() for c in vals[0]]):
+                return vals
+        return None
 
-    # Questionnaire tab.
-    prows, pcols = find(lambda low: "first name" in low and "last name" in low
-                        and "division" in low)
-    if prows is not None:
-        header = prows[0]
-        reader = _row_reader(pcols)
-        for r in prows[1:]:
-            g = reader(r)
-            name = (g("first name") + " " + g("last name")).strip()
+    def cell(r, i):
+        return _clean(r[i]) if (i is not None and len(r) > i) else ""
+
+    def name_of(low, r):
+        ci = {h: i for i, h in enumerate(low)}
+        fi, li = ci.get("first name"), ci.get("last name")
+        if fi is not None or li is not None:
+            nm = (cell(r, fi) + " " + cell(r, li)).strip()
+            if nm:
+                return nm
+        for i, h in enumerate(low):           # e.g. "Your Name (Red)"
+            if _is_name_col(h) and h not in ("first name", "last name") and cell(r, i):
+                return cell(r, i)
+        return ""
+
+    def div_of(low, r):
+        ci = {h: i for i, h in enumerate(low)}
+        return _norm_div(cell(r, ci.get("division", ci.get("your division"))))
+
+    is_form = lambda low: "timestamp" in low
+    has_div = lambda low: ("division" in low) or ("your division" in low)
+    has_name = lambda low: any(_is_name_col(h) for h in low)
+    has_photo = lambda low: any("photo" in h for h in low)
+
+    # Roster team/division by slug, to enrich the profile page.
+    roster_meta = {}
+    rrows = find(lambda low: "team name" in low and "player first name" in low
+                 and "player last name" in low)
+    if rrows is not None:
+        rl = [_clean(c).lower() for c in rrows[0]]
+        rci = {h: i for i, h in enumerate(rl)}
+        for r in rrows[1:]:
+            nm = (cell(r, rci.get("player first name")) + " "
+                  + cell(r, rci.get("player last name"))).strip()
+            if nm:
+                roster_meta[_slug(nm)] = (cell(r, rci.get("team name")),
+                                          _norm_div(cell(r, rci.get("division"))))
+
+    def base_entry(name, low, r):
+        slug = _slug(name)
+        team, rdiv = roster_meta.get(slug, ("", ""))
+        return {"slug": slug, "name": name,
+                "first": name.split()[0], "last": name.split()[-1],
+                "division": div_of(low, r) or rdiv, "team": team,
+                "qa": [], "photo_id": "", "photo_url": ""}
+
+    # Questionnaire tab: a form tab with a division + name, but no photo column.
+    qrows = find(lambda low: is_form(low) and has_div(low) and has_name(low)
+                 and not has_photo(low))
+    if qrows is not None:
+        header = qrows[0]
+        low = [_clean(c).lower() for c in header]
+        for r in qrows[1:]:
+            name = name_of(low, r)
             if not name:
                 continue
-            qa = []
+            entry = base_entry(name, low, r)
             for ci in range(len(header)):
-                h = _clean(header[ci]).lower()
-                if not h or h in _PROFILE_SKIP:
+                h = low[ci] if ci < len(low) else ""
+                if (not h or h in _PROFILE_SKIP or h == "your division"
+                        or _is_name_col(h) or "photo" in h):
                     continue
-                val = _clean(r[ci]) if len(r) > ci else ""
-                if val:
-                    qa.append((_clean(header[ci]), val))
-            out[_slug(name)] = {
-                "slug": _slug(name), "name": name,
-                "first": g("first name"), "last": g("last name"),
-                "division": _norm_div(g("division")), "team": g("team"),
-                "qa": qa, "photo_id": "", "photo_url": "",
-            }
+                v = cell(r, ci)
+                if v:
+                    entry["qa"].append((_clean(header[ci]), v))
+            out[entry["slug"]] = entry
 
-    # Photo tab.
-    frows, fcols = find(lambda low: "first name" in low and "last name" in low
-                        and any("photo" in h for h in low))
+    # Photo tab: a form tab that has a 'photo' column.
+    frows = find(lambda low: is_form(low) and has_photo(low))
     if frows is not None:
-        reader = _row_reader(fcols)
-        photo_key = next((h for h in fcols if "photo" in h), None)
+        low = [_clean(c).lower() for c in frows[0]]
+        pidx = next((i for i, h in enumerate(low) if "photo" in h), None)
         for r in frows[1:]:
-            g = reader(r)
-            name = (g("first name") + " " + g("last name")).strip()
+            name = name_of(low, r)
             if not name:
                 continue
             slug = _slug(name)
-            m = _DRIVE_RE.search(g(photo_key) if photo_key else "")
+            m = _DRIVE_RE.search(cell(r, pidx))
             pid = m.group(1) if m else ""
-            entry = out.get(slug)
-            if entry is None:
-                entry = {"slug": slug, "name": name,
-                         "first": g("first name"), "last": g("last name"),
-                         "division": "", "team": g("team"),
-                         "qa": [], "photo_id": "", "photo_url": ""}
-                out[slug] = entry
+            entry = out.get(slug) or base_entry(name, low, r)
+            out[slug] = entry
             if pid:
                 entry["photo_id"] = pid
                 entry["photo_url"] = "/league/player/photo/" + pid
