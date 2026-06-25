@@ -146,8 +146,30 @@ function updatePhotoForm() {
     throw new Error('No file-upload (photo) question found in the form.');
   }
 
+  // Turn off any existing section branching first, so deleting the old
+  // questions can't leave a dangling "go to section" reference (which triggers
+  // "Invalid data updating form").
+  form.getItems(FormApp.ItemType.MULTIPLE_CHOICE).forEach(function (it) {
+    try {
+      var mc = it.asMultipleChoiceItem();
+      mc.setChoiceValues(mc.getChoices().map(function (c) { return c.getValue(); }));
+    } catch (e) {}
+  });
+  form.getItems(FormApp.ItemType.LIST).forEach(function (it) {
+    try {
+      var li = it.asListItem();
+      li.setChoiceValues(li.getChoices().map(function (c) { return c.getValue(); }));
+    } catch (e) {}
+  });
+  form.getItems(FormApp.ItemType.PAGE_BREAK).forEach(function (it) {
+    try { it.asPageBreakItem().setGoToPage(FormApp.PageNavigationType.CONTINUE); } catch (e) {}
+  });
+
+  // Delete everything except the photo question (end-to-start, safely).
   form.getItems().slice().reverse().forEach(function (it) {
-    if (!photoIds[it.getId()]) form.deleteItem(it);
+    if (!photoIds[it.getId()]) {
+      try { form.deleteItem(it); } catch (e) {}
+    }
   });
 
   var redBreak = form.addPageBreakItem().setTitle('RED Division');
