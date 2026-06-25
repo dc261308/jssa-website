@@ -1859,6 +1859,86 @@ def _row_reader(cols):
     return reader
 
 
+def _parse_score(v):
+    """A schedule score cell -> int, or None if blank/non-numeric."""
+    s = str(v or "").strip()
+    if not s:
+        return None
+    try:
+        return int(float(s))
+    except (ValueError, TypeError):
+        return None
+
+
+def _fmt_pct(p):
+    s = "%.3f" % p
+    return s[1:] if s.startswith("0.") else s   # ".750", but keep "1.000"
+
+
+def _fmt_gb(g):
+    if g <= 0:
+        return "—"                          # em dash for the leader
+    return str(int(g)) if g == int(g) else "%.1f" % g
+
+
+def _fmt_diff(d):
+    return "+%d" % d if d > 0 else str(d)        # "+5" / "-3" / "0"
+
+
+def _standings_from_schedule(schedule):
+    """Compute division standings from the schedule's final scores, so the site
+    never needs a separate Standings tab. Every team that appears in the schedule
+    is listed (0-0 until its games are scored). Returns
+    {'RED':[{team,wins,losses,pct,gb,rf,ra,diff}], 'WHITE':[...], 'BLUE':[...]}."""
+    table = {"RED": {}, "WHITE": {}, "BLUE": {}}
+
+    def ensure(div, team):
+        if div in table and team and team not in table[div]:
+            table[div][team] = {"team": team, "wins": 0, "losses": 0,
+                                "ties": 0, "rf": 0, "ra": 0}
+
+    for g in schedule:
+        div = g.get("division")
+        if div not in table:
+            continue
+        home, away = g.get("home"), g.get("away")
+        ensure(div, home)
+        ensure(div, away)
+        hs, as_ = _parse_score(g.get("score_home")), _parse_score(g.get("score_away"))
+        if hs is None or as_ is None:
+            continue                              # game not finished yet
+        th, ta = table[div].get(home), table[div].get(away)
+        if not th or not ta:
+            continue
+        th["rf"] += hs; th["ra"] += as_
+        ta["rf"] += as_; ta["ra"] += hs
+        if hs > as_:
+            th["wins"] += 1; ta["losses"] += 1
+        elif as_ > hs:
+            ta["wins"] += 1; th["losses"] += 1
+        else:
+            th["ties"] += 1; ta["ties"] += 1
+
+    out = {"RED": [], "WHITE": [], "BLUE": []}
+    for div, teams in table.items():
+        rows = []
+        for t in teams.values():
+            gp = t["wins"] + t["losses"] + t["ties"]
+            t["pct_val"] = (t["wins"] + 0.5 * t["ties"]) / gp if gp else 0.0
+            t["diff_val"] = t["rf"] - t["ra"]
+            rows.append(t)
+        rows.sort(key=lambda r: (-r["pct_val"], -r["diff_val"], r["team"].lower()))
+        if rows:
+            leader = rows[0]
+            for r in rows:
+                gb = ((leader["wins"] - r["wins"]) + (r["losses"] - leader["losses"])) / 2.0
+                r["pct"] = _fmt_pct(r["pct_val"])
+                r["gb"] = _fmt_gb(gb)
+                r["diff"] = _fmt_diff(r["diff_val"])
+        out[div] = rows
+    return out
+
+
 def league_season():
     """Everything the public league pages need, read from the Control Sheet:
         {'standings': {RED/WHITE/BLUE: [team,...]},
@@ -1958,6 +2038,14 @@ def league_season():
                     players = sorted(bucket[(div, team)],
                                      key=lambda n: n.split()[-1].lower())
                     data["rosters"][div].append({"team": team, "players": players})
+
+        # Auto-standings: derive the table from the schedule's final scores so
+        # there's no separate Standings tab to maintain. Every team in the
+        # schedule is listed (0-0 until scored). Only overrides the tab-read
+        # standings when the schedule actually has teams.
+        computed = _standings_from_schedule(data["schedule"])
+        if any(computed.values()):
+            data["standings"] = computed
 
         with _lock:
             _season_cache["data"] = data

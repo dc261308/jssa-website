@@ -147,6 +147,34 @@ def teams_debug():
         return "<pre>ERROR: " + str(e) + "</pre>"
 
 
+@app.route("/league/debug")
+def league_debug():
+    """Temporary diagnostic for the league (Control Sheet) data: lists every tab
+    with its header row (headers only, no data) plus what league_season() parsed.
+    Helps spot a mis-named tab or a clobbered header row. Remove once verified."""
+    out = {}
+    try:
+        sh = sheets._control_sheet(readonly=True)
+        tabs = sheets._control_tabs(sh)
+        out["tabs"] = [{"title": t, "rows": len(v),
+                        "header": [str(c) for c in (v[0] if v else [])]}
+                       for t, v in tabs]
+    except Exception as e:
+        out["tabs_error"] = "%s: %s" % (type(e).__name__, e)
+    try:
+        sheets._season_cache["ts"] = 0.0   # force a fresh read, ignore the cache
+        s = sheets.league_season()
+        out["parsed"] = {
+            "schedule": len(s["schedule"]),
+            "results": len(s["results"]),
+            "rosters": {k: len(v) for k, v in s["rosters"].items()},
+            "standings": {k: len(v) for k, v in s["standings"].items()},
+        }
+    except Exception as e:
+        out["parsed_error"] = "%s: %s" % (type(e).__name__, e)
+    return jsonify(out)
+
+
 @app.route("/teams/preview")
 def teams_preview():
     """Design preview using sample data — remove this route before next season."""
