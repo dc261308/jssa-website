@@ -59,7 +59,6 @@
   .tc-role{margin-top:6px;font-family:var(--display);font-weight:800;
       text-transform:uppercase;letter-spacing:.06em;color:var(--accent);
       font-size:clamp(.85rem,3.6vw,1.05rem)}
-  .tc-role .dot{color:#c9c0a6;margin:0 7px}
 </style>
 <div class="tc {{ player.division }}">
   <div class="tc-frame">
@@ -78,7 +77,7 @@
     </div>
     <div class="tc-plate">
       <div class="tc-name">{{ player.name }}</div>
-      <div class="tc-role">{% if player.position %}{{ player.position }}<span class="dot">&bull;</span>{% endif %}{{ player.team or 'JSSA' }}</div>
+      {% if player.position %}<div class="tc-role">{{ player.position }}</div>{% endif %}
     </div>
   </div>
 </div>
