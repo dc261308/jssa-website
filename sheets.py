@@ -42,6 +42,16 @@ def is_configured():
     return bool(SHEET_ID and _SA_JSON)
 
 
+def service_account_email():
+    """The service account's email (client_email) — the address to share Drive
+    folders/sheets with so the site can read them. This is a public identifier,
+    NOT a secret (the private key is never exposed)."""
+    try:
+        return json.loads(_SA_JSON).get("client_email", "") if _SA_JSON else ""
+    except Exception:
+        return ""
+
+
 def _worksheet():
     """Return the WebsiteNotices worksheet, creating it (with headers) if needed."""
     import gspread
