@@ -755,7 +755,8 @@ def _bb_worksheet():
 
 
 def blackboard_posts():
-    """Active Blackboard posts, ordered by the 'order' column (low to high).
+    """Active Blackboard posts, newest first (highest 'order' column first).
+    New posts auto-receive the highest order number, so they appear at the top.
     Cached for _CACHE_TTL seconds; last good value kept on error."""
     now = time.time()
     with _lock:
@@ -785,7 +786,7 @@ def blackboard_posts():
                     "side": (str(r.get("side") or "").strip().lower() or "left"),
                     "order": _to_int(r.get("order")),
                 })
-            posts.sort(key=lambda p: p["order"])
+            posts.sort(key=lambda p: p["order"], reverse=True)
         with _lock:
             _bb_cache["data"] = posts
             _bb_cache["ts"] = now
