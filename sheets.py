@@ -2206,6 +2206,17 @@ def player_cards():
         profiles = player_profiles()
     except Exception:
         return {}
+    # Positions come from the league's master roster (the same sheet the public
+    # Players page reads — First/Last/Division/Position), matched by name. So the
+    # card fills the position in automatically with nothing to copy or maintain.
+    try:
+        pos_by_slug = {}
+        for plist in division_rosters().values():
+            for e in plist:
+                if e.get("pos"):
+                    pos_by_slug.setdefault(_slug(e["name"]), e["pos"])
+    except Exception:
+        pos_by_slug = {}
     out = {}
     for div, teams in season.get("rosters", {}).items():
         for t in teams:
@@ -2215,12 +2226,15 @@ def player_cards():
                 if not slug:
                     continue
                 parts = nm.split()
+                # Prefer an explicit Position on the team's Players tab, else fall
+                # back to the master roster's position for that name.
+                position = p.get("position", "") or pos_by_slug.get(slug, "")
                 out[slug] = {
                     "slug": slug, "name": nm,
                     "first": parts[0] if parts else nm,
                     "last": parts[-1] if parts else nm,
                     "team": t.get("team", ""), "division": div,
-                    "position": p.get("position", ""),
+                    "position": position,
                     "photo_url": profiles.get(slug, {}).get("photo_url", ""),
                 }
     return out
