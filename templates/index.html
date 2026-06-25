@@ -232,15 +232,17 @@
   .post .sign{margin-top:10px;color:var(--muted);font-style:italic;font-size:.92rem}
   .post .go{display:inline-block;margin-top:12px;font-family:var(--display);font-weight:700;color:var(--blue)}
 
-  /* Blackboard watermark — a very faint softball/park image behind the whole
-     section. It sits UNDER the white post cards (which stay solid), so it only
-     shows softly in the margins and behind the heading and never affects how
-     readable the posts are. To make it fainter/stronger, change the opacity
-     (.06 now). To use a different photo, change the file in the url(). */
+  /* Blackboard watermark — a faint park photo behind the whole section. It sits
+     UNDER the white post cards (which stay solid), so it only shows softly in
+     the margins and behind the heading and never affects how readable the posts
+     are. Image is Tom's Jupiter park photo on Google Drive (shared "anyone with
+     the link"), loaded the same way as the sponsor/Blackboard images. Change the
+     opacity (.15) to make it fainter/stronger; add filter:grayscale(100%) to
+     mute it to black & white. */
   #board{position:relative}
   #board::before{content:"";position:absolute;inset:0;
-    background:url('/static/softball-hero.png') center/cover no-repeat;
-    opacity:.06;filter:grayscale(100%);pointer-events:none;z-index:0}
+    background:url('https://lh3.googleusercontent.com/d/1C0ULHrdo-4_SjceTrnl2WBKrEN2lnGIv=w1600') center/cover no-repeat;
+    opacity:.15;pointer-events:none;z-index:0}
   #board > .wrap{position:relative;z-index:1}
 
   /* Sponsors */
