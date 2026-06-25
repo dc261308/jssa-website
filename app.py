@@ -41,6 +41,23 @@ app.secret_key = os.environ.get("SECRET_KEY", "dev-only-insecure-key")
 ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "")
 
 
+@app.after_request
+def _revalidate_html(resp):
+    """Tell browsers to always check for the freshest page (HTML only), so a
+    deploy is seen immediately instead of a stale cached copy. An ETag keeps it
+    cheap: unchanged pages return a tiny 304, not the whole page again. Images,
+    CSS and other assets keep their own caching."""
+    try:
+        if (request.method == "GET" and resp.status_code == 200
+                and resp.headers.get("Content-Type", "").startswith("text/html")):
+            resp.headers["Cache-Control"] = "no-cache"
+            resp.add_etag()
+            resp.make_conditional(request)
+    except Exception:
+        pass
+    return resp
+
+
 # ----------------------------------------------------------------------------
 # Public site
 # ----------------------------------------------------------------------------
