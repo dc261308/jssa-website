@@ -2028,7 +2028,7 @@ def _parse_profiles(tabs):
         team, rdiv = roster_meta.get(slug, ("", ""))
         return {"slug": slug, "name": name,
                 "first": name.split()[0], "last": name.split()[-1],
-                "division": div_of(low, r) or rdiv, "team": team,
+                "division": rdiv or div_of(low, r), "team": team,
                 "qa": [], "photo_id": "", "photo_url": ""}
 
     # Questionnaire tab: a form tab with a division + name, but no photo column.
@@ -2110,10 +2110,27 @@ def fetch_profile_photo_bytes(file_id):
     try:
         import requests
         creds = _drive_creds()
+        auth = {"Authorization": "Bearer " + creds.token}
+        # Look up the file's type + thumbnail first.
+        meta = requests.get(
+            "https://www.googleapis.com/drive/v3/files/%s" % file_id,
+            params={"fields": "mimeType,thumbnailLink", "supportsAllDrives": "true"},
+            headers=auth, timeout=15)
+        mime = thumb = ""
+        if meta.status_code == 200:
+            j = meta.json()
+            mime = (j.get("mimeType") or "").lower()
+            thumb = j.get("thumbnailLink") or ""
+        # Formats browsers can't show (notably iPhone HEIC/HEIF) -> serve Drive's
+        # auto-generated JPEG thumbnail at a large size instead.
+        if mime and mime not in _WEB_IMAGE_MIMES and thumb:
+            big = re.sub(r"=s\d+(-c)?$", "=s1200", thumb)
+            t = requests.get(big, headers=auth, timeout=20)
+            if t.status_code == 200 and t.content:
+                return t.content, t.headers.get("Content-Type", "image/jpeg")
         r = requests.get("https://www.googleapis.com/drive/v3/files/%s" % file_id,
                          params={"alt": "media", "supportsAllDrives": "true"},
-                         headers={"Authorization": "Bearer " + creds.token},
-                         timeout=20)
+                         headers=auth, timeout=20)
         if r.status_code != 200:
             return None, None
         return r.content, r.headers.get("Content-Type", "image/jpeg")

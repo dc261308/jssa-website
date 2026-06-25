@@ -7,58 +7,66 @@
   .article{background:none;border:0;box-shadow:none;padding:0}
   .doc-btns{justify-content:center;margin-top:16px}
 
-  .bbcard{width:100%;max-width:470px;margin:0 auto;background:#fdf7e6;
-    border:4px solid var(--acc,#16233f);border-radius:16px;overflow:hidden;
-    box-shadow:0 12px 34px rgba(22,35,63,.25)}
+  .bbcard{display:flex;width:100%;max-width:720px;margin:0 auto;background:#fdf7e6;
+    border:5px solid var(--acc,#16233f);border-radius:18px;overflow:hidden;
+    box-shadow:0 14px 38px rgba(22,35,63,.28)}
   .bbcard.RED{--acc:#d8262b} .bbcard.WHITE{--acc:#54607a} .bbcard.BLUE{--acc:#2b5bd0}
 
-  .bb-top{background:var(--acc,#16233f);color:#fff;padding:12px 18px;display:flex;
-    align-items:center;justify-content:space-between;gap:10px}
-  .bb-name{font-family:var(--display);font-weight:900;font-size:1.55rem;line-height:1.05;color:#fff}
-  .bb-sub{font-family:var(--display);font-weight:700;font-size:.76rem;opacity:.93;
+  /* Left: the photo fills the whole side. */
+  .bb-photo-col{flex:0 0 44%;background:var(--acc,#16233f);position:relative;min-height:320px}
+  .bb-photo-col img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
+  .bb-photo-col .bb-noimg{position:absolute;inset:0;display:grid;place-items:center;color:#fff;
+    font-family:var(--display);font-weight:900;font-size:4.6rem}
+
+  /* Right: name banner + stat grid. */
+  .bb-right{flex:1;display:flex;flex-direction:column;min-width:0}
+  .bb-top{background:var(--acc,#16233f);color:#fff;padding:14px 18px;display:flex;
+    align-items:center;justify-content:space-between;gap:8px}
+  .bb-name{font-family:var(--display);font-weight:900;font-size:1.6rem;line-height:1.04;color:#fff}
+  .bb-sub{font-family:var(--display);font-weight:700;font-size:.74rem;opacity:.93;
     text-transform:uppercase;letter-spacing:.05em;margin-top:3px}
-  .bb-badge{flex:0 0 auto;font-size:1.7rem;opacity:.92}
-
-  .bb-photo-wrap{text-align:center;padding:16px 16px 4px}
-  .bb-photo{width:150px;height:150px;object-fit:cover;border-radius:10px;border:4px solid #fff;
-    box-shadow:0 3px 10px rgba(0,0,0,.22);background:#e9eef6}
-  .bb-noimg{width:150px;height:150px;border-radius:10px;border:4px solid #fff;margin:0 auto;
-    box-shadow:0 3px 10px rgba(0,0,0,.22);background:var(--acc,#16233f);color:#fff;display:grid;
-    place-items:center;font-family:var(--display);font-weight:900;font-size:3rem}
-
-  .bb-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:2px;
-    background:var(--acc,#16233f);border-top:3px solid var(--acc,#16233f);margin-top:12px}
-  .bb-stat{background:#fdf7e6;padding:9px 14px}
-  .bb-q{font-family:var(--display);font-weight:800;color:var(--acc,#16233f);font-size:.63rem;
+  .bb-badge{flex:0 0 auto;font-size:1.6rem;opacity:.92}
+  .bb-stats{flex:1;display:grid;grid-template-columns:1fr 1fr;gap:2px;background:var(--acc,#16233f);
+    align-content:start}
+  .bb-stat{background:#fdf7e6;padding:9px 14px;min-width:0}
+  .bb-q{font-family:var(--display);font-weight:800;color:var(--acc,#16233f);font-size:.62rem;
     letter-spacing:.06em;text-transform:uppercase;display:block;margin-bottom:1px}
-  .bb-a{color:#332913;font-weight:600;font-size:1rem;line-height:1.22}
-
+  .bb-a{color:#332913;font-weight:600;font-size:.98rem;line-height:1.22;word-wrap:break-word}
   .bb-foot{background:var(--acc,#16233f);color:#fff;padding:8px 16px;text-align:center;
-    font-family:var(--display);font-weight:800;font-size:.68rem;letter-spacing:.12em;text-transform:uppercase}
+    font-family:var(--display);font-weight:800;font-size:.66rem;letter-spacing:.1em;text-transform:uppercase}
+
+  @media(max-width:560px){
+    .bbcard{flex-direction:column;max-width:430px}
+    .bb-photo-col{flex-basis:auto;height:280px}
+  }
 </style>
 <div class="bbcard {{ player.division }}">
-  <div class="bb-top">
-    <div>
-      <div class="bb-name">{{ player.name }}</div>
-      <div class="bb-sub">{{ player.team }}{% if player.team and player.division %} &middot; {% endif %}{% if player.division %}{{ player.division }} Division{% endif %}</div>
-    </div>
-    <div class="bb-badge">&#9918;</div>
-  </div>
-  <div class="bb-photo-wrap">
+  <div class="bb-photo-col">
     {% if player.photo_url %}
-      <img class="bb-photo" src="{{ player.photo_url }}" alt="{{ player.name }}">
+      <img src="{{ player.photo_url }}" alt="{{ player.name }}">
     {% else %}
       <div class="bb-noimg">{{ (player.first[:1] ~ player.last[:1])|upper }}</div>
     {% endif %}
   </div>
-  {% if player.qa %}
-  <div class="bb-stats">
-    {% for q, a in player.qa %}
-    <div class="bb-stat"><span class="bb-q">{{ q }}</span><span class="bb-a">{{ a }}</span></div>
-    {% endfor %}
+  <div class="bb-right">
+    <div class="bb-top">
+      <div>
+        <div class="bb-name">{{ player.name }}</div>
+        <div class="bb-sub">{{ player.team }}{% if player.team and player.division %} &middot; {% endif %}{% if player.division %}{{ player.division }} Division{% endif %}</div>
+      </div>
+      <div class="bb-badge">&#9918;</div>
+    </div>
+    {% if player.qa %}
+    <div class="bb-stats">
+      {% for q, a in player.qa %}
+      <div class="bb-stat"><span class="bb-q">{{ q }}</span><span class="bb-a">{{ a }}</span></div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="bb-stat" style="flex:1"><span class="bb-a">Profile coming soon.</span></div>
+    {% endif %}
+    <div class="bb-foot">Jupiter Senior Softball &middot; Player Card</div>
   </div>
-  {% endif %}
-  <div class="bb-foot">Jupiter Senior Softball &middot; Player Card</div>
 </div>
 {% endblock %}
 {% block footer_btns %}<a class="btn btn-navy" href="/league/rosters">&larr; Back to Rosters</a>{% endblock %}

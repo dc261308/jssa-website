@@ -186,6 +186,27 @@ def league_debug():
         }
     except Exception as e:
         out["profiles_error"] = "%s: %s" % (type(e).__name__, e)
+    # Can the service account actually READ each submitted photo? 200 = yes
+    # (and shows the type); 403/404 = the upload folder isn't shared with it.
+    try:
+        import requests
+        creds = sheets._drive_creds()
+        checks = []
+        for slug, p in sheets.player_profiles().items():
+            pid = p.get("photo_id")
+            if not pid:
+                continue
+            m = requests.get("https://www.googleapis.com/drive/v3/files/%s" % pid,
+                             params={"fields": "name,mimeType", "supportsAllDrives": "true"},
+                             headers={"Authorization": "Bearer " + creds.token},
+                             timeout=10)
+            info = {"slug": slug, "drive_status": m.status_code}
+            if m.status_code == 200:
+                info["mime"] = m.json().get("mimeType")
+            checks.append(info)
+        out["photo_check"] = checks
+    except Exception as e:
+        out["photo_check_error"] = "%s: %s" % (type(e).__name__, e)
     return jsonify(out)
 
 
