@@ -1948,6 +1948,142 @@ def _standings_from_schedule(schedule):
     return out
 
 
+# ----------------------------------------------------------------------------
+# Player profiles — the two "player profile" Google Forms feed response tabs
+# into the Control Sheet: a questionnaire tab (no login) and an optional photo
+# tab (file upload). We read both and key each by the player's name slug, so a
+# roster player's name can link to their own profile page. Names must match the
+# roster (and each other) to line up.
+# ----------------------------------------------------------------------------
+_PROFILE_SKIP = {"timestamp", "first name", "last name", "division", "team",
+                 "email", "email address"}
+_profiles_cache = {"data": None, "ts": 0.0}
+_PROFILES_TTL = 120  # seconds
+
+
+def _slug(s):
+    """A URL-safe key from a name: 'Thomas Cosentino' -> 'thomas-cosentino'."""
+    return re.sub(r"[^a-z0-9]+", "-", str(s or "").strip().lower()).strip("-")
+
+
+def _parse_profiles(tabs):
+    """Merge the questionnaire + photo form tabs into {slug: profile}. The
+    questionnaire tab carries the Q&A (it has a Division column; the roster
+    Players tab uses 'player first name', so it won't be confused for it). The
+    photo tab carries the Drive photo (it has a column containing 'photo')."""
+    out = {}
+
+    def find(pred):
+        for _title, vals in tabs:
+            if not vals:
+                continue
+            low = [_clean(c).lower() for c in vals[0]]
+            if pred(low):
+                return vals, {n: i for i, n in enumerate(low)}
+        return None, None
+
+    # Questionnaire tab.
+    prows, pcols = find(lambda low: "first name" in low and "last name" in low
+                        and "division" in low)
+    if prows is not None:
+        header = prows[0]
+        reader = _row_reader(pcols)
+        for r in prows[1:]:
+            g = reader(r)
+            name = (g("first name") + " " + g("last name")).strip()
+            if not name:
+                continue
+            qa = []
+            for ci in range(len(header)):
+                h = _clean(header[ci]).lower()
+                if not h or h in _PROFILE_SKIP:
+                    continue
+                val = _clean(r[ci]) if len(r) > ci else ""
+                if val:
+                    qa.append((_clean(header[ci]), val))
+            out[_slug(name)] = {
+                "slug": _slug(name), "name": name,
+                "first": g("first name"), "last": g("last name"),
+                "division": _norm_div(g("division")), "team": g("team"),
+                "qa": qa, "photo_id": "", "photo_url": "",
+            }
+
+    # Photo tab.
+    frows, fcols = find(lambda low: "first name" in low and "last name" in low
+                        and any("photo" in h for h in low))
+    if frows is not None:
+        reader = _row_reader(fcols)
+        photo_key = next((h for h in fcols if "photo" in h), None)
+        for r in frows[1:]:
+            g = reader(r)
+            name = (g("first name") + " " + g("last name")).strip()
+            if not name:
+                continue
+            slug = _slug(name)
+            m = _DRIVE_RE.search(g(photo_key) if photo_key else "")
+            pid = m.group(1) if m else ""
+            entry = out.get(slug)
+            if entry is None:
+                entry = {"slug": slug, "name": name,
+                         "first": g("first name"), "last": g("last name"),
+                         "division": "", "team": g("team"),
+                         "qa": [], "photo_id": "", "photo_url": ""}
+                out[slug] = entry
+            if pid:
+                entry["photo_id"] = pid
+                entry["photo_url"] = "/league/player/photo/" + pid
+    return out
+
+
+def player_profiles():
+    """{slug: profile} for every submitted player profile/photo. Cached briefly;
+    last good value kept on error."""
+    now = time.time()
+    with _lock:
+        c = _profiles_cache
+        if c["data"] is not None and now - c["ts"] < _PROFILES_TTL:
+            return c["data"]
+    try:
+        out = {}
+        if CONTROL_SHEET_ID and _SA_JSON:
+            sh = _control_sheet(readonly=True)
+            out = _parse_profiles(_control_tabs(sh))
+        with _lock:
+            _profiles_cache["data"] = out
+            _profiles_cache["ts"] = now
+        return out
+    except Exception:
+        return _profiles_cache["data"] or {}
+
+
+def _profile_photo_ids():
+    try:
+        return {p["photo_id"] for p in player_profiles().values() if p.get("photo_id")}
+    except Exception:
+        return set()
+
+
+def fetch_profile_photo_bytes(file_id):
+    """Return (bytes, content_type) for a player-profile photo, or (None, None).
+    Only serves Drive ids that appear in a submitted profile (safety), streamed
+    via the service account (the photo folder must be shared with it, exactly
+    like the Highlights upload folder)."""
+    if not _SA_JSON or file_id not in _profile_photo_ids():
+        return None, None
+    try:
+        import requests
+        creds = _drive_creds()
+        r = requests.get("https://www.googleapis.com/drive/v3/files/%s" % file_id,
+                         params={"alt": "media", "supportsAllDrives": "true"},
+                         headers={"Authorization": "Bearer " + creds.token},
+                         timeout=20)
+        if r.status_code != 200:
+            return None, None
+        return r.content, r.headers.get("Content-Type", "image/jpeg")
+    except Exception:
+        return None, None
+
+
 def league_season():
     """Everything the public league pages need, read from the Control Sheet:
         {'standings': {RED/WHITE/BLUE: [team,...]},
@@ -1970,6 +2106,7 @@ def league_season():
         if CONTROL_SHEET_ID and _SA_JSON:
             sh = _control_sheet(readonly=True)
             tabs = _control_tabs(sh)          # one batch read for all tabs
+            profiles = _parse_profiles(tabs)  # submitted player profiles (by slug)
 
             # --- Standings ---
             _, rows, hi, cols = _match_tab(tabs, ["team", "wins", "losses"])
@@ -2049,8 +2186,11 @@ def league_season():
                         bucket[key]["manager"] = name
                 for (div, team) in order:
                     b = bucket[(div, team)]
-                    players = sorted(b["players"],
-                                     key=lambda n: n.split()[-1].lower())
+                    names = sorted(b["players"],
+                                   key=lambda n: n.split()[-1].lower())
+                    players = [{"name": nm, "slug": _slug(nm),
+                                "has_profile": _slug(nm) in profiles}
+                               for nm in names]
                     data["rosters"][div].append({
                         "team": team, "players": players,
                         "manager": b["manager"], "count": len(players)})

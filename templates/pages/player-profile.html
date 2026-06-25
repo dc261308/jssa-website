@@ -1,0 +1,38 @@
+{% extends "page_base.html" %}
+{% block eyebrow %}Player Profile{% endblock %}
+{% block sub %}{% if player.team or player.division %}<p class="sub">{{ player.team }}{% if player.division %} &middot; {{ player.division }} Division{% endif %}</p>{% endif %}{% endblock %}
+{% block body %}
+<style>
+  .pp{max-width:620px;margin:0 auto;text-align:center}
+  .pp-photo{width:210px;height:210px;border-radius:18px;object-fit:cover;display:block;
+    margin:0 auto 20px;box-shadow:var(--shadow);border:3px solid #fff}
+  .pp-noimg{width:210px;height:210px;border-radius:18px;margin:0 auto 20px;display:grid;
+    place-items:center;background:var(--navy);color:#fff;font-family:var(--display);
+    font-weight:800;font-size:3.8rem;box-shadow:var(--shadow)}
+  .pp-qa{list-style:none;padding:0;margin:6px 0 0;text-align:left}
+  .pp-qa li{padding:14px 2px;border-top:1px solid var(--line)}
+  .pp-qa li:first-child{border-top:0}
+  .pp-q{font-family:var(--display);font-weight:700;color:var(--muted);font-size:.78rem;
+    letter-spacing:.06em;text-transform:uppercase;display:block;margin-bottom:3px}
+  .pp-a{color:var(--navy);font-size:1.18rem;font-weight:600}
+  .pp-empty{color:var(--muted);margin-top:10px}
+</style>
+<div class="pp">
+  {% if player.photo_url %}
+    <img class="pp-photo" src="{{ player.photo_url }}" alt="{{ player.name }}">
+  {% else %}
+    <div class="pp-noimg">{{ (player.first[:1] ~ player.last[:1])|upper }}</div>
+  {% endif %}
+  {% if player.qa %}
+  <ul class="pp-qa">
+    {% for q, a in player.qa %}
+    <li><span class="pp-q">{{ q }}</span><span class="pp-a">{{ a }}</span></li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p class="pp-empty">This player hasn't filled out their profile yet.</p>
+  {% endif %}
+</div>
+{% endblock %}
+{% block footer_btns %}<a class="btn btn-navy" href="/league/rosters">&larr; Back to Rosters</a>{% endblock %}
+{% block extra_btns %}{% endblock %}
