@@ -7,39 +7,38 @@ division's players. The list rebuilds itself **every night** from the
 
 IMPORTANT: This is a **standalone** script — a brand-new, separate Apps Script
 project. Do **NOT** paste it into the pickup-game spreadsheet's existing code
-project (the one with ~26 files). Apps Script files in one project share a
-namespace, so adding this could collide with the existing functions (e.g.
-`onOpen`) and break the pickup game. Keeping it separate keeps everything safe.
+project (the one with ~26 files); function-name collisions could disrupt the
+pickup game. The site already matches photos to players by name, so no website
+code changes.
 
-The site already matches photos to players by name, so no website code changes.
+## Stable-by-design (important)
+The updater builds the Division → name → photo structure **once**, then on every
+later run only **refreshes the dropdown choices in place**. It does NOT delete
+and recreate the questions, because recreating them makes Google Forms add a new
+**response column** every time — which scatters each uploader's name across many
+columns. By refreshing in place, the response sheet stays stable: one name
+column per division, so you can always tell who uploaded what (and delete/replace
+a row to remove/replace a photo).
 
-## How the form ends up looking
+## How the form looks
 1. **Page 1** — "Division" (RED / WHITE / BLUE). Picking one jumps to that page.
 2. **Page 2** — "Select your name" (dropdown of only that division's players).
 3. **Page 3** — the existing photo (file-upload) question, then Submit.
 
-The script **replaces** the form's old typed name/team questions with this
-two-step picker and **never touches the photo question** (Apps Script can't
-create file-upload questions, so we keep the one already there).
-
 ## One-time setup (~5 minutes)
-1. Get the **pickup-game spreadsheet ID**: open that Google Sheet and copy the
-   long code in its web address, between `/d/` and `/edit`.
-2. Get your **photo Form's edit URL**: open the Form in edit mode and copy the
-   address (ends in `/edit`).
-3. Go to **script.google.com → New project** (this is a NEW, separate project —
-   not the pickup-game code).
+1. Get the **pickup-game spreadsheet ID** (the long code in its web address,
+   between `/d/` and `/edit`).
+2. Get your **photo Form's edit URL** (open the Form in edit mode; ends in
+   `/edit`).
+3. Go to **script.google.com → New project** (a NEW, separate project).
 4. Delete the sample code and **paste the whole script below**.
-5. Fill in `SHEET_ID` and `FORM_URL` near the top.
-6. Click **Save**.
-7. In the function dropdown choose **installTriggers**, click **Run**, and
-   approve the permission prompt the first time (Advanced → Go to project →
-   Allow — it's your own script).
-8. Open the **Execution log** — it prints e.g.
+5. Fill in `SHEET_ID` and `FORM_URL` near the top. Click **Save**.
+6. In the function dropdown choose **installTriggers**, click **Run**, and
+   approve the permission prompt the first time.
+7. The **Execution log** prints e.g.
    `Done. Photo form now lists RED 40 · WHITE 40 · BLUE 40 players.`
 
-After that it refreshes nightly. To refresh immediately (e.g. after adding
-players), open this project, choose **updateNow**, and click **Run**.
+After that it refreshes nightly; run **updateNow** to refresh immediately.
 
 ## Requirements
 - The Form must have **one file-upload question** (the photo); its title should
@@ -56,11 +55,10 @@ players), open this project, choose **updateNow**, and click **Run**.
  * Do NOT paste into the pickup-game spreadsheet's existing code.
  */
 
-// 1) Pickup-game spreadsheet ID — the long code in its web address,
-//    between /d/ and /edit. It holds the "JSSA players" tab.
+// 1) Pickup-game spreadsheet ID — it holds the "JSSA players" tab.
 var SHEET_ID = 'PASTE_PICKUP_GAME_SPREADSHEET_ID';
 
-// 2) Photo Form's edit URL (ends in /edit).
+// 2) Photo Form's EDIT url (ends in /edit).
 var FORM_URL = 'PASTE_PHOTO_FORM_EDIT_URL';
 
 var DIVISIONS = ['RED', 'WHITE', 'BLUE'];
@@ -144,7 +142,12 @@ function lastName(full) {
   return p[p.length - 1].toLowerCase();
 }
 
-/** Rebuild the form's name picker. Returns counts per division. */
+/**
+ * Refresh the name lists. If the Division -> name structure already exists, we
+ * update the dropdowns IN PLACE — recreating them each run is what made Google
+ * Forms add a fresh response column every time (scattering the names). Only the
+ * very first run builds the structure.
+ */
 function updatePhotoForm() {
   var form = FormApp.openByUrl(FORM_URL);
   var roster = readRoster();
@@ -157,9 +160,42 @@ function updatePhotoForm() {
     throw new Error('No file-upload (photo) question found in the form.');
   }
 
-  // Turn off any existing section branching first, so deleting the old
-  // questions can't leave a dangling "go to section" reference (which triggers
-  // "Invalid data updating form").
+  var nd = findNameDropdowns(form);
+  if (nd.RED && nd.WHITE && nd.BLUE) {
+    setNames(nd.RED, roster.RED);
+    setNames(nd.WHITE, roster.WHITE);
+    setNames(nd.BLUE, roster.BLUE);
+    return countOf(roster);
+  }
+
+  buildForm(form, roster, photoIds);
+  return countOf(roster);
+}
+
+function countOf(roster) {
+  return { RED: roster.RED.length, WHITE: roster.WHITE.length, BLUE: roster.BLUE.length };
+}
+
+/** Find each division's existing name dropdown by walking the sections. */
+function findNameDropdowns(form) {
+  var out = {}, cur = '';
+  form.getItems().forEach(function (it) {
+    var t = it.getType();
+    if (t === FormApp.ItemType.PAGE_BREAK) {
+      var u = String(it.getTitle() || '').toUpperCase();
+      cur = u.indexOf('RED') === 0 ? 'RED' : u.indexOf('WHITE') === 0 ? 'WHITE'
+          : u.indexOf('BLUE') === 0 ? 'BLUE' : '';
+    } else if (t === FormApp.ItemType.LIST && cur && !out[cur]) {
+      out[cur] = it.asListItem();
+    }
+  });
+  return out;
+}
+
+/** First-time build of the Division -> name -> photo structure. */
+function buildForm(form, roster, photoIds) {
+  // Turn off existing branching so deleting old questions can't leave a
+  // dangling "go to section" reference ("Invalid data updating form").
   form.getItems(FormApp.ItemType.MULTIPLE_CHOICE).forEach(function (it) {
     try {
       var mc = it.asMultipleChoiceItem();
@@ -175,8 +211,6 @@ function updatePhotoForm() {
   form.getItems(FormApp.ItemType.PAGE_BREAK).forEach(function (it) {
     try { it.asPageBreakItem().setGoToPage(FormApp.PageNavigationType.CONTINUE); } catch (e) {}
   });
-
-  // Delete everything except the photo question (end-to-start, safely).
   form.getItems().slice().reverse().forEach(function (it) {
     if (!photoIds[it.getId()]) {
       try { form.deleteItem(it); } catch (e) {}
@@ -213,8 +247,6 @@ function updatePhotoForm() {
   form.getItems().forEach(function (it) {
     if (photoIds[it.getId()]) form.moveItem(it.getIndex(), form.getItems().length - 1);
   });
-
-  return { RED: roster.RED.length, WHITE: roster.WHITE.length, BLUE: roster.BLUE.length };
 }
 
 function setNames(listItem, names) {
@@ -222,10 +254,12 @@ function setNames(listItem, names) {
 }
 ```
 
-## Notes
-- Standalone = isolated. It never touches the pickup-game project's existing code.
-- Dropdown options are the player's plain **First Last** name (sorted), exactly
-  what the website matches on — so the card photo lines up every time.
-- Re-running is safe (rebuilds the same structure). Past responses are kept.
-- To undo: in this project's **Triggers** (clock icon), delete the daily trigger,
-  then edit the form by hand if you wish. Nothing here touches the website.
+## Managing uploads
+- Each upload's name lands in the **"Select your name"** column for that
+  player's division (plus the **Division** column and the **Photo Upload** link).
+- To remove or replace someone's photo: find their row and delete it (or
+  clear/replace the Photo Upload link). The card reverts/updates within minutes.
+- The empty/duplicate columns left over from earlier testing are harmless; the
+  website ignores them and no new ones are created now.
+- Optional future enhancement: an onFormSubmit trigger could write a single
+  consolidated "Player" column next to each photo. Not built (keeps it simple).
