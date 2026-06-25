@@ -2025,11 +2025,13 @@ def league_season():
                         "result": result,
                     })
 
-            # --- Rosters (Players tab: Team Name + player names) ---
+            # --- Rosters (Players tab: Team Name + player names; an optional
+            #     "Manager" column marks one player per team as the manager —
+            #     put any mark, e.g. "Yes", in that player's Manager cell) ---
             _, rows, hi, cols = _match_tab(
                 tabs, ["team name", "player first name", "player last name"])
             if rows is not None:
-                bucket = {}  # (div, team) -> [names]
+                bucket = {}  # (div, team) -> {"players": [names], "manager": ""}
                 order = []
                 for r in rows[hi + 1:]:
                     g = _row_reader(cols)(r)
@@ -2040,13 +2042,18 @@ def league_season():
                         continue
                     key = (div, team)
                     if key not in bucket:
-                        bucket[key] = []
+                        bucket[key] = {"players": [], "manager": ""}
                         order.append(key)
-                    bucket[key].append(name)
+                    bucket[key]["players"].append(name)
+                    if g("manager") and not bucket[key]["manager"]:
+                        bucket[key]["manager"] = name
                 for (div, team) in order:
-                    players = sorted(bucket[(div, team)],
+                    b = bucket[(div, team)]
+                    players = sorted(b["players"],
                                      key=lambda n: n.split()[-1].lower())
-                    data["rosters"][div].append({"team": team, "players": players})
+                    data["rosters"][div].append({
+                        "team": team, "players": players,
+                        "manager": b["manager"], "count": len(players)})
 
         # Auto-standings: derive the table from the schedule's final scores so
         # there's no separate Standings tab to maintain. Every team in the

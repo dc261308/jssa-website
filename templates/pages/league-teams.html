@@ -15,6 +15,9 @@
   .tcard.WHITE{border-top-color:var(--navy)}
   .tname{font-family:var(--display);font-weight:800;color:var(--navy);font-size:1.3rem;line-height:1.2}
   .tcount{color:var(--muted);font-size:1rem;font-weight:600;margin-top:6px}
+  .tmgr{margin-top:10px;font-size:1.05rem;color:var(--navy);font-weight:600}
+  .tmgr .lbl{font-family:var(--display);font-weight:700;color:var(--muted);font-size:.74rem;
+    letter-spacing:.06em;text-transform:uppercase;display:block;margin-bottom:1px}
 </style>
 {% set picker_label = 'teams' %}
 {% include "_divpicker.html" %}
@@ -28,6 +31,7 @@
       <div class="tcard {{ div }}">
         <div class="tname">{{ t.team }}</div>
         <div class="tcount">{{ t.players|length }} player{{ '' if t.players|length == 1 else 's' }}</div>
+        {% if t.manager %}<div class="tmgr"><span class="lbl">Manager</span>{{ t.manager }}</div>{% endif %}
       </div>
       {% endfor %}
     </div>
