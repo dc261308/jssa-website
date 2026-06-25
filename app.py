@@ -154,6 +154,10 @@ def league_debug():
     Helps spot a mis-named tab or a clobbered header row. Remove once verified."""
     out = {}
     try:
+        out["service_account_email"] = sheets.service_account_email()
+    except Exception:
+        pass
+    try:
         sh = sheets._control_sheet(readonly=True)
         tabs = sheets._control_tabs(sh)
         out["tabs"] = [{"title": t, "rows": len(v),
