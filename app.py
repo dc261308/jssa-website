@@ -175,6 +175,38 @@ def league_debug():
     return jsonify(out)
 
 
+@app.route("/league/player/<slug>")
+def player_profile(slug):
+    try:
+        profiles = sheets.player_profiles()
+    except Exception:
+        profiles = {}
+    player = profiles.get(slug)
+    if not player:
+        abort(404)
+    return render_template("pages/player-profile.html",
+                           page_title=player["name"], player=player)
+
+
+_PROFILE_PHOTO_RE = re.compile(r"^[A-Za-z0-9_-]{10,}$")
+
+
+@app.route("/league/player/photo/<file_id>")
+def player_photo(file_id):
+    if not _PROFILE_PHOTO_RE.match(file_id):
+        abort(404)
+    try:
+        data, ctype = sheets.fetch_profile_photo_bytes(file_id)
+    except Exception:
+        data, ctype = None, None
+    if not data:
+        abort(404)
+    from flask import Response
+    resp = Response(data, mimetype=ctype or "image/jpeg")
+    resp.headers["Cache-Control"] = "public, max-age=3600"
+    return resp
+
+
 @app.route("/teams/preview")
 def teams_preview():
     """Design preview using sample data — remove this route before next season."""

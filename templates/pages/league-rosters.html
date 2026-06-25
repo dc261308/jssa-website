@@ -32,7 +32,7 @@
         <div class="tname">{{ t.team }}</div>
         <div class="tcount">{{ t.players|length }} player{{ '' if t.players|length == 1 else 's' }}</div>
         <ol>
-          {% for p in t.players %}<li>{{ p }}</li>{% endfor %}
+          {% for p in t.players %}<li>{% if p.has_profile %}<a href="/league/player/{{ p.slug }}">{{ p.name }}</a>{% else %}{{ p.name }}{% endif %}</li>{% endfor %}
         </ol>
       </div>
       {% endfor %}
