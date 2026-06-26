@@ -158,20 +158,14 @@
   .predict{background:var(--navy);color:#fff}
   .predict .sec-eyebrow{color:#9fc0ff}
   .predict .sec-title{color:#fff}.predict .sec-sub{color:#cbd6ee}
-  /* Champion of the Month — slim single-line gold banner (own class so the
-     other .champ card's navy styling can't override it). */
-  .cotm{display:flex;gap:14px;align-items:center;
-    background:linear-gradient(135deg,#ffe27a,#f0b822);
-    border:2px solid #fff1bf;border-radius:12px;padding:13px 20px;margin-top:24px;
-    box-shadow:0 8px 24px rgba(0,0,0,.30)}
-  .cotm-badge{font-size:1.7rem;line-height:1;flex:none}
-  .cotm-line{flex:1;min-width:0;font-family:var(--display);font-weight:800;color:#16233f;font-size:1.12rem;line-height:1.25}
-  .cotm-line .mo{color:#6e4a00;font-weight:800}
-  .cotm-line .st{font-weight:700;color:#4a3a0c;font-size:.95rem}
-  .cotm-prize{margin-left:auto;text-align:right;color:#4a3a0c;font-size:.9rem;font-weight:600;line-height:1.25;flex:none}
-  .cotm-prize strong{color:#16233f;font-weight:800}
-  @media(max-width:620px){.cotm{flex-wrap:wrap}.cotm-prize{margin-left:0;text-align:left;width:100%;
-    border-top:1px solid rgba(110,74,0,.32);padding-top:8px;margin-top:2px}}
+  /* Champion of the Month — royal-blue banner shown above the highlights
+     section. Two lines: headline + a free-text message Tom writes. */
+  .cotm{background:linear-gradient(135deg,#2b5bd0,#1f47ad);
+    border:1px solid rgba(255,255,255,.20);border-radius:14px;padding:18px 26px;margin-bottom:26px;
+    box-shadow:0 10px 28px rgba(22,35,63,.20)}
+  .cotm-title{font-family:var(--display);font-weight:900;color:#fff;font-size:1.6rem;line-height:1.14}
+  .cotm-msg{margin-top:6px;color:#eaf1ff;font-size:1.04rem;font-weight:500;line-height:1.4}
+  @media(max-width:560px){.cotm-title{font-size:1.34rem}}
   /* Live odds panel */
   .odds{margin-top:30px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);border-radius:16px;padding:22px 22px 18px}
   .odds-head{font-family:var(--display);font-weight:800;color:#fff;font-size:1.18rem;margin:0 0 4px;display:flex;align-items:center;gap:9px}
@@ -512,16 +506,6 @@
     <h2 class="sec-title">Call the winners. Climb the board.</h2>
     <p class="sec-sub">Before each game day, pick who takes every field. We score it against the real results and crown a champion every month.</p>
 
-    {% if champion and champion.name %}
-    <div class="cotm">
-      <div class="cotm-badge">🏆</div>
-      <div class="cotm-line"><span class="mo">{{ champion.month or 'Champion' }}:</span> {{ champion.name }}{% if champion.stats %} <span class="st">&middot; {{ champion.stats }}</span>{% endif %}</div>
-      {% if champion.prize %}
-      <div class="cotm-prize">🎁 <strong>{{ (champion.prize_month ~ ' prize') if champion.prize_month else 'Prize' }}:</strong> {{ champion.prize }}{% if champion.prize_donor %}<br>compliments of <strong>{{ champion.prize_donor }}</strong>{% endif %}</div>
-      {% endif %}
-    </div>
-    {% endif %}
-
     <div class="cta-row" style="margin-top:28px;gap:16px;flex-wrap:wrap">
       <a class="btn btn-red" href="https://script.google.com/macros/s/AKfycbwqXbN6B6WNa7Dye3NJcUWzmNrMETCZWjW2F8JrjmhKb7F3idebOxiBeRm1Fpzpx1ij/exec?view=predictions_test" target="_blank" rel="noopener">🏆 Enter the Prediction Game →</a>
       <a class="btn" style="background:#2b5bd0;color:#fff" href="https://script.google.com/macros/s/AKfycbwqXbN6B6WNa7Dye3NJcUWzmNrMETCZWjW2F8JrjmhKb7F3idebOxiBeRm1Fpzpx1ij/exec?view=prediction_leaderboard" target="_blank" rel="noopener">📊 View the Leaderboard →</a>
@@ -671,6 +655,12 @@
 <!-- ============ HIGHLIGHTS ============ -->
 <section class="block highlights" id="highlights">
   <div class="wrap">
+    {% if champion and champion.name %}
+    <div class="cotm">
+      <div class="cotm-title"><span class="mo">{{ champion.month or 'Champion' }}:</span> {{ champion.name }}</div>
+      {% if champion.note %}<div class="cotm-msg">{{ champion.note }}</div>{% endif %}
+    </div>
+    {% endif %}
     <div class="sec-eyebrow">Photos &middot; This Week</div>
     <h2 class="sec-title">Highlights from around the league</h2>
     <p class="sec-sub">The most recent photos uploaded by JSSA members &mdash; this updates on its own as new photos come in.</p>
