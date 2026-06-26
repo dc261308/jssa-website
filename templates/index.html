@@ -158,6 +158,17 @@
   .predict{background:var(--navy);color:#fff}
   .predict .sec-eyebrow{color:#9fc0ff}
   .predict .sec-title{color:#fff}.predict .sec-sub{color:#cbd6ee}
+  /* Champion of the Month — gold banner */
+  .champ{display:flex;gap:22px;align-items:center;background:linear-gradient(135deg,#fff6da,#ffe09e);
+    border:1px solid #e9c969;border-radius:16px;padding:22px 26px;margin-top:26px;box-shadow:0 12px 34px rgba(0,0,0,.22)}
+  .champ-badge{font-size:2.7rem;flex:none;line-height:1}
+  .champ-eyebrow{font-family:var(--display);font-weight:700;text-transform:uppercase;letter-spacing:.09em;font-size:.8rem;color:#8a6400}
+  .champ-name{font-family:var(--display);font-weight:800;font-size:1.9rem;color:var(--navy);line-height:1.1;margin:2px 0 3px}
+  .champ-stats{color:#5d4b1e;font-weight:700;font-size:1.05rem}
+  .champ-note{color:#6b531a;font-style:italic;margin-top:6px}
+  .champ-prize{margin-top:12px;padding-top:12px;border-top:1px solid rgba(138,100,0,.28);color:#6b531a;font-size:1.04rem}
+  .champ-prize strong{color:var(--navy)}
+  @media(max-width:560px){.champ{flex-direction:column;text-align:center}.champ-prize{text-align:left}}
   /* Live odds panel */
   .odds{margin-top:30px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);border-radius:16px;padding:22px 22px 18px}
   .odds-head{font-family:var(--display);font-weight:800;color:#fff;font-size:1.18rem;margin:0 0 4px;display:flex;align-items:center;gap:9px}
@@ -497,6 +508,22 @@
     <div class="sec-eyebrow">Prediction Contest</div>
     <h2 class="sec-title">Call the winners. Climb the board.</h2>
     <p class="sec-sub">Before each game day, pick who takes every field. We score it against the real results and crown a champion every month.</p>
+
+    {% if champion and champion.name %}
+    <div class="champ">
+      <div class="champ-badge">🏆</div>
+      <div class="champ-body">
+        <div class="champ-eyebrow">{{ champion.month or 'Champion of the Month' }}</div>
+        <div class="champ-name">{{ champion.name }}</div>
+        {% if champion.stats %}<div class="champ-stats">{{ champion.stats }}</div>{% endif %}
+        {% if champion.note %}<div class="champ-note">&ldquo;{{ champion.note }}&rdquo;</div>{% endif %}
+        {% if champion.prize %}
+        <div class="champ-prize">🎁 <strong>{{ (champion.prize_month ~ ' prize') if champion.prize_month else 'Prize' }}:</strong> {{ champion.prize }}{% if champion.prize_donor %} &mdash; compliments of <strong>{{ champion.prize_donor }}</strong>{% endif %}</div>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+
     <div class="cta-row" style="margin-top:28px;gap:16px;flex-wrap:wrap">
       <a class="btn btn-red" href="https://script.google.com/macros/s/AKfycbwqXbN6B6WNa7Dye3NJcUWzmNrMETCZWjW2F8JrjmhKb7F3idebOxiBeRm1Fpzpx1ij/exec?view=predictions_test" target="_blank" rel="noopener">🏆 Enter the Prediction Game →</a>
       <a class="btn" style="background:#2b5bd0;color:#fff" href="https://script.google.com/macros/s/AKfycbwqXbN6B6WNa7Dye3NJcUWzmNrMETCZWjW2F8JrjmhKb7F3idebOxiBeRm1Fpzpx1ij/exec?view=prediction_leaderboard" target="_blank" rel="noopener">📊 View the Leaderboard →</a>
