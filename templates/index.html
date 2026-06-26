@@ -158,17 +158,21 @@
   .predict{background:var(--navy);color:#fff}
   .predict .sec-eyebrow{color:#9fc0ff}
   .predict .sec-title{color:#fff}.predict .sec-sub{color:#cbd6ee}
-  /* Champion of the Month — gold banner */
-  .champ{display:flex;gap:22px;align-items:center;background:linear-gradient(135deg,#fff6da,#ffe09e);
-    border:1px solid #e9c969;border-radius:16px;padding:22px 26px;margin-top:26px;box-shadow:0 12px 34px rgba(0,0,0,.22)}
-  .champ-badge{font-size:2.7rem;flex:none;line-height:1}
-  .champ-eyebrow{font-family:var(--display);font-weight:700;text-transform:uppercase;letter-spacing:.09em;font-size:.8rem;color:#8a6400}
-  .champ-name{font-family:var(--display);font-weight:800;font-size:1.9rem;color:var(--navy);line-height:1.1;margin:2px 0 3px}
-  .champ-stats{color:#5d4b1e;font-weight:700;font-size:1.05rem}
-  .champ-note{color:#6b531a;font-style:italic;margin-top:6px}
-  .champ-prize{margin-top:12px;padding-top:12px;border-top:1px solid rgba(138,100,0,.28);color:#6b531a;font-size:1.04rem}
-  .champ-prize strong{color:var(--navy)}
-  @media(max-width:560px){.champ{flex-direction:column;text-align:center}.champ-prize{text-align:left}}
+  /* Champion of the Month — bold gold award banner (own class to avoid the
+     other .champ card's navy styling overriding it). */
+  .cotm{display:flex;gap:26px;align-items:center;
+    background:linear-gradient(135deg,#ffe27a 0%,#f7c531 50%,#eaad1c 100%);
+    border:3px solid #fff1bf;border-radius:18px;padding:28px 32px;margin-top:28px;
+    box-shadow:0 16px 44px rgba(0,0,0,.38)}
+  .cotm-badge{font-size:3.4rem;flex:none;line-height:1;filter:drop-shadow(0 3px 4px rgba(0,0,0,.28))}
+  .cotm-body{min-width:0}
+  .cotm-eyebrow{font-family:var(--display);font-weight:800;text-transform:uppercase;letter-spacing:.12em;font-size:.92rem;color:#6e4a00}
+  .cotm-name{font-family:var(--display);font-weight:900;font-size:2.2rem;color:#16233f;line-height:1.08;margin:4px 0 6px}
+  .cotm-stats{display:inline-block;background:#16233f;color:#ffd86b;font-family:var(--display);font-weight:800;font-size:1.02rem;padding:5px 14px;border-radius:999px}
+  .cotm-note{color:#4a3a0c;font-style:italic;margin-top:12px;font-size:1.08rem;line-height:1.4;font-weight:500}
+  .cotm-prize{margin-top:16px;padding-top:15px;border-top:2px solid rgba(110,74,0,.32);color:#3d2f08;font-size:1.1rem;font-weight:600}
+  .cotm-prize strong{color:#16233f;font-weight:800}
+  @media(max-width:560px){.cotm{flex-direction:column;text-align:center;padding:24px 20px}.cotm-name{font-size:1.85rem}.cotm-prize{text-align:left}}
   /* Live odds panel */
   .odds{margin-top:30px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);border-radius:16px;padding:22px 22px 18px}
   .odds-head{font-family:var(--display);font-weight:800;color:#fff;font-size:1.18rem;margin:0 0 4px;display:flex;align-items:center;gap:9px}
@@ -510,15 +514,15 @@
     <p class="sec-sub">Before each game day, pick who takes every field. We score it against the real results and crown a champion every month.</p>
 
     {% if champion and champion.name %}
-    <div class="champ">
-      <div class="champ-badge">🏆</div>
-      <div class="champ-body">
-        <div class="champ-eyebrow">{{ champion.month or 'Champion of the Month' }}</div>
-        <div class="champ-name">{{ champion.name }}</div>
-        {% if champion.stats %}<div class="champ-stats">{{ champion.stats }}</div>{% endif %}
-        {% if champion.note %}<div class="champ-note">&ldquo;{{ champion.note }}&rdquo;</div>{% endif %}
+    <div class="cotm">
+      <div class="cotm-badge">🏆</div>
+      <div class="cotm-body">
+        <div class="cotm-eyebrow">{{ champion.month or 'Champion of the Month' }}</div>
+        <div class="cotm-name">{{ champion.name }}</div>
+        {% if champion.stats %}<div class="cotm-stats">{{ champion.stats }}</div>{% endif %}
+        {% if champion.note %}<div class="cotm-note">&ldquo;{{ champion.note }}&rdquo;</div>{% endif %}
         {% if champion.prize %}
-        <div class="champ-prize">🎁 <strong>{{ (champion.prize_month ~ ' prize') if champion.prize_month else 'Prize' }}:</strong> {{ champion.prize }}{% if champion.prize_donor %} &mdash; compliments of <strong>{{ champion.prize_donor }}</strong>{% endif %}</div>
+        <div class="cotm-prize">🎁 <strong>{{ (champion.prize_month ~ ' prize') if champion.prize_month else 'Prize' }}:</strong> {{ champion.prize }}{% if champion.prize_donor %} &mdash; compliments of <strong>{{ champion.prize_donor }}</strong>{% endif %}</div>
         {% endif %}
       </div>
     </div>
