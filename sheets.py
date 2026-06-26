@@ -552,6 +552,22 @@ def _parse_schedule_date(label, today):
     return min(candidates, key=lambda d: abs((d - today).days))
 
 
+def _parse_game_date(label, today):
+    """Turn a game-date label into a real date. Handles the numeric formats the
+    Control Sheet schedule uses (e.g. '9/5/2026', '08/08/2026', '2026-09-05')
+    and falls back to the 'Wed, June 24' word style used elsewhere. Returns a
+    date or None."""
+    s = _clean(label)
+    if not s:
+        return None
+    for fmt in ("%m/%d/%Y", "%m/%d/%y", "%Y-%m-%d", "%m-%d-%Y"):
+        try:
+            return datetime.datetime.strptime(s, fmt).date()
+        except ValueError:
+            continue
+    return _parse_schedule_date(label, today)
+
+
 def _parse_schedule_grid(rows, ref):
     """Find the next upcoming game and who's signed up, from the raw schedule
     rows. `ref` is 'now' in Eastern time. Returns the next-game dict or None."""
@@ -2402,22 +2418,17 @@ def schedule_games_for_scoring():
                 "score_home": g("score home"), "score_away": g("score away"),
                 "status": g("status"),
             })
-        # Order for the admin score form: games that have been played but still
-        # need a score come first (most recently played at the very top, so the
-        # game you just finished is right there), then upcoming games (soonest
-        # first), then games that already have a score (most recent first, for
-        # easy editing).
+        # Order for the admin score form: games that still need a score come
+        # first, in date order (soonest/next game at the top). Games that
+        # already have a score drop to the bottom (still editable), also in
+        # date order. Undated games sort to the end of their group.
         today = datetime.datetime.now(_EASTERN).date()
 
         def _score_sort_key(gm):
             done = gm["score_home"] != "" and gm["score_away"] != ""
-            d = _parse_schedule_date(gm["date"], today)
-            ordd = d.toordinal() if d else 0
-            if done:
-                return (2, -ordd)
-            if d and d > today:        # upcoming, not playable yet: soonest first
-                return (1, ordd)
-            return (0, -ordd)          # played (or undated): most recent first
+            d = _parse_game_date(gm["date"], today)
+            ordd = d.toordinal() if d else 10 ** 9
+            return (1 if done else 0, ordd)
 
         out.sort(key=_score_sort_key)
         return out
