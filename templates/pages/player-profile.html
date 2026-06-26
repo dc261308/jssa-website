@@ -38,7 +38,10 @@
   /* Photo */
   .tc-photo{position:relative;aspect-ratio:1/1;background:#22335a;
       border-top:3px solid var(--accent);border-bottom:3px solid var(--accent)}
-  .tc-photo img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+  /* Crop from near the top, not the center: faces sit in the upper part of a
+     photo, so this shows heads/shoulders instead of midsections on tall or
+     full-body shots. */
+  .tc-photo img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center 20%}
   .tc-noimg{position:absolute;inset:0;display:grid;place-items:center;color:#fff;
       font-family:var(--display);font-weight:900;font-size:5.4rem;
       background:linear-gradient(160deg,var(--accent),#16233f)}
