@@ -2824,6 +2824,131 @@ def prediction_analytics():
 
 
 # ----------------------------------------------------------------------------
+# Prediction Champion of the Month — admin-entered, shown on the homepage.
+# ----------------------------------------------------------------------------
+# Tom types the monthly winner into the admin panel; it is stored as a single
+# row in a "Prediction Champion" tab and shown as a gold banner in the contest
+# section until the next champion is crowned. A short celebratory note is also
+# shown on the Blackboard for a few days after crowning (see app.py).
+CHAMPION_TAB = "Prediction Champion"
+CHAMP_HEADERS = ["month", "name", "stats", "note",
+                 "prize", "prize_month", "prize_donor", "announce", "crowned"]
+_champ_cache = {"data": None, "ts": 0.0}
+
+# How many days the short celebratory announcement stays up after a new champion
+# is crowned.
+CHAMPION_ANNOUNCE_DAYS = 4
+
+
+def _champion_worksheet():
+    import gspread
+    from google.oauth2.service_account import Credentials
+
+    info = json.loads(_SA_JSON)
+    scopes = ["https://www.googleapis.com/auth/spreadsheets"]
+    creds = Credentials.from_service_account_info(info, scopes=scopes)
+    gc = gspread.authorize(creds)
+    sh = gc.open_by_key(SHEET_ID)
+    try:
+        ws = sh.worksheet(CHAMPION_TAB)
+    except gspread.WorksheetNotFound:
+        ws = sh.add_worksheet(title=CHAMPION_TAB, rows=10, cols=len(CHAMP_HEADERS))
+        ws.update([CHAMP_HEADERS], "A1")
+    return ws
+
+
+def _champ_invalidate():
+    with _lock:
+        _champ_cache["ts"] = 0.0
+
+
+def prediction_champion():
+    """The current Champion of the Month, or None if none is set.
+        {month, name, stats, note, prize, announce(bool), crowned, is_fresh(bool)}
+    'is_fresh' is True for the first few days after crowning, so the homepage can
+    also show a short celebratory note. Cached; last good value kept on error."""
+    now = time.time()
+    with _lock:
+        if _champ_cache["data"] is not None and now - _champ_cache["ts"] < _CACHE_TTL:
+            return _champ_cache["data"]
+
+    champ = None
+    try:
+        if is_configured():
+            ws = _champion_worksheet()
+            rows = ws.get_all_records(expected_headers=CHAMP_HEADERS)
+            for r in rows:
+                name = str(r.get("name") or "").strip()
+                if not name:
+                    continue
+                crowned = str(r.get("crowned") or "").strip()
+                is_fresh = False
+                d = _parse_game_date(crowned, datetime.date.today())
+                if d is not None:
+                    is_fresh = (datetime.date.today() - d).days < CHAMPION_ANNOUNCE_DAYS
+                champ = {
+                    "month": str(r.get("month") or "").strip(),
+                    "name": name,
+                    "stats": str(r.get("stats") or "").strip(),
+                    "note": str(r.get("note") or "").strip(),
+                    "prize": str(r.get("prize") or "").strip(),
+                    "prize_month": str(r.get("prize_month") or "").strip(),
+                    "prize_donor": str(r.get("prize_donor") or "").strip(),
+                    "announce": _is_true(r.get("announce")),
+                    "crowned": crowned,
+                    "is_fresh": is_fresh,
+                }
+                break  # only the first (single) champion row is used
+        with _lock:
+            _champ_cache["data"] = champ
+            _champ_cache["ts"] = now
+        return champ
+    except Exception:
+        return _champ_cache["data"]
+
+
+def set_prediction_champion(fields):
+    """Save (overwrite) the single Champion of the Month row. Stamps today's date
+    as 'crowned' so the short celebratory note knows when to stop showing.
+    Returns True on success."""
+    try:
+        if not is_configured():
+            return False
+        ws = _champion_worksheet()
+        announce = "TRUE" if _is_true(fields.get("announce")) else "FALSE"
+        row = [
+            (fields.get("month") or "").strip(),
+            (fields.get("name") or "").strip(),
+            (fields.get("stats") or "").strip(),
+            (fields.get("note") or "").strip(),
+            (fields.get("prize") or "").strip(),
+            (fields.get("prize_month") or "").strip(),
+            (fields.get("prize_donor") or "").strip(),
+            announce,
+            datetime.date.today().strftime("%m/%d/%Y"),
+        ]
+        # Always rewrite the header + the single data row (row 2).
+        ws.update([CHAMP_HEADERS, row], "A1")
+        _champ_invalidate()
+        return True
+    except Exception:
+        return False
+
+
+def clear_prediction_champion():
+    """Remove the current champion (clears the data row). Returns True on success."""
+    try:
+        if not is_configured():
+            return False
+        ws = _champion_worksheet()
+        ws.update([CHAMP_HEADERS, [""] * len(CHAMP_HEADERS)], "A1")
+        _champ_invalidate()
+        return True
+    except Exception:
+        return False
+
+
+# ----------------------------------------------------------------------------
 # Sponsors — admin-managed, seeded with the current sponsor list
 # ----------------------------------------------------------------------------
 # On first use the tab is created and filled with the sponsors currently on the

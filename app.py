@@ -84,6 +84,26 @@ def home():
         blackboard = sheets.blackboard_posts()
     except Exception:
         blackboard = []
+    # Current Prediction Champion of the Month (gold banner in the contest area).
+    try:
+        champion = sheets.prediction_champion()
+    except Exception:
+        champion = None
+    # For a few days after a champion is crowned, also drop a short celebratory
+    # card at the top of the Blackboard. It rides on the champion's "crowned"
+    # date, so it disappears on its own — no announcement to clean up later.
+    if champion and champion.get("is_fresh") and champion.get("announce"):
+        who = champion["name"]
+        month = champion.get("month") or "this month"
+        blackboard = [{
+            "when": "Prediction Contest",
+            "title": "🏆 %s is the %s champion!" % (who, month),
+            "body": ("Congratulations to %s for topping the prediction contest. "
+                     "Think you can call the games better? Jump in and play — "
+                     "a new champion is crowned every month." % who),
+            "image": "", "link_url": "#predict",
+            "link_text": "See the contest", "sign": "", "side": "left",
+        }] + (blackboard or [])
     try:
         board = sheets.board_members()
     except Exception:
@@ -121,7 +141,7 @@ def home():
                            board=board, sponsors=sponsor_list,
                            pred_odds=pred_odds, pred_board=pred_board,
                            pred_stats=pred_stats, league_acc=league_acc,
-                           views=views)
+                           champion=champion, views=views)
 
 
 @app.route("/pickup")
@@ -585,6 +605,42 @@ def admin_predictions_save():
     if ok:
         threading.Thread(target=_trigger_scoring, daemon=True).start()
     return redirect(url_for("admin_predictions", saved=("1" if ok else "0")))
+
+
+@app.route("/admin/champion")
+@login_required
+def admin_champion():
+    configured = sheets.is_configured()
+    champion = None
+    if configured:
+        try:
+            champion = sheets.prediction_champion()
+        except Exception:
+            champion = None
+    return render_template("admin/champion.html", configured=configured,
+                           champion=champion, saved=request.args.get("saved"))
+
+
+@app.route("/admin/champion/save", methods=["POST"])
+@login_required
+def admin_champion_save():
+    ok = False
+    if request.form.get("name", "").strip():
+        try:
+            ok = sheets.set_prediction_champion(request.form)
+        except Exception:
+            ok = False
+    return redirect(url_for("admin_champion", saved=("1" if ok else "0")))
+
+
+@app.route("/admin/champion/clear", methods=["POST"])
+@login_required
+def admin_champion_clear():
+    try:
+        sheets.clear_prediction_champion()
+    except Exception:
+        pass
+    return redirect(url_for("admin_champion"))
 
 
 @app.route("/admin/directory")
