@@ -503,10 +503,29 @@ def admin_dashboard():
 @login_required
 def admin_scores():
     try:
-        games = sheets.schedule_games_for_scoring()
+        all_games = sheets.schedule_games_for_scoring()
     except Exception:
-        games = []
-    return render_template("admin/scores.html", games=games,
+        all_games = []
+
+    # Count how many games still need a score in each division, for the picker.
+    divisions = ("RED", "WHITE", "BLUE")
+    counts = {d: {"unscored": 0, "total": 0} for d in divisions}
+    for g in all_games:
+        d = g.get("division")
+        if d in counts:
+            counts[d]["total"] += 1
+            if not (g.get("score_home") != "" and g.get("score_away") != ""):
+                counts[d]["unscored"] += 1
+
+    division = (request.args.get("division") or "").strip().upper()
+    if division not in divisions:
+        # Step 1: ask which division to score.
+        return render_template("admin/scores_pick.html", counts=counts,
+                               saved=request.args.get("saved"))
+
+    # Step 2: show just that division's games (already sorted needs-scoring first).
+    games = [g for g in all_games if g.get("division") == division]
+    return render_template("admin/scores.html", games=games, division=division,
                            saved=request.args.get("saved"))
 
 
@@ -516,13 +535,15 @@ def admin_scores_save():
     row = request.form.get("row", "").strip()
     score_home = request.form.get("score_home", "").strip()
     score_away = request.form.get("score_away", "").strip()
+    division = (request.form.get("division") or "").strip().upper()
     ok = False
     if row.isdigit() and score_home != "" and score_away != "":
         try:
             ok = sheets.set_game_score(int(row), score_home, score_away)
         except Exception:
             ok = False
-    return redirect(url_for("admin_scores", saved=("1" if ok else "0")))
+    return redirect(url_for("admin_scores", division=division or None,
+                            saved=("1" if ok else "0")))
 
 
 @app.route("/admin/predictions")

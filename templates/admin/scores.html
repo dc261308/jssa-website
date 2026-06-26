@@ -1,6 +1,6 @@
 {% extends "page_base.html" %}
 {% block eyebrow %}Admin{% endblock %}
-{% block sub %}<p class="sub">Enter the final score for each game. Saving writes it straight into the Schedule tab of the control sheet — the standings update automatically.</p>{% endblock %}
+{% block sub %}<p class="sub">Enter the final score for each game. The most recently played game that still needs a score is at the top. Saving writes it straight into the Schedule tab — the standings update automatically.</p>{% endblock %}
 {% block body %}
 <style>
   html{font-size:112.5%}
@@ -22,6 +22,12 @@
   .donetag{display:inline-block;font-family:var(--display);font-weight:700;font-size:.72rem;
     letter-spacing:.05em;text-transform:uppercase;padding:4px 10px;border-radius:999px;
     background:#e8f6ee;color:#1a7f4b;margin-left:8px}
+  .divhead{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;
+    margin-bottom:16px;padding-bottom:12px;border-bottom:2px solid var(--line)}
+  .divhead h2{font-family:var(--display);font-weight:800;font-size:1.5rem;margin:0;color:var(--navy)}
+  .divhead .pill{display:inline-block;width:14px;height:14px;border-radius:999px;margin-right:8px;vertical-align:middle}
+  .divhead .pill.RED{background:var(--red)} .divhead .pill.BLUE{background:var(--blue)} .divhead .pill.WHITE{background:var(--navy)}
+  .divhead a{font-weight:700}
   @media(max-width:560px){.sgsave{margin-left:0;width:100%}.sgsave button{width:100%}}
 </style>
 
@@ -30,11 +36,16 @@
   <a href="{{ url_for('admin_logout') }}">Sign out</a>
 </div>
 
+<div class="divhead">
+  <h2><span class="pill {{ division }}"></span>{{ division }} Division</h2>
+  <a href="{{ url_for('admin_scores') }}">↔ Change division</a>
+</div>
+
 {% if saved == '1' %}<div class="saved">✓ Score saved. The standings will update within a couple of minutes.</div>{% endif %}
 {% if saved == '0' %}<div class="failed">Couldn't save that score. Make sure both score boxes have a number, then try again.</div>{% endif %}
 
 {% if not games %}
-  <p style="color:var(--muted)">No games found in the Schedule tab yet. Once the schedule is filled in, the games will appear here ready to score.</p>
+  <p style="color:var(--muted)">No games found for the {{ division }} Division yet. Once the schedule is filled in, the games will appear here ready to score.</p>
 {% else %}
   {% for g in games %}
   {% set done = g.score_home != '' and g.score_away != '' %}
@@ -42,6 +53,7 @@
     <div class="sgwhen">{{ g.date }}{% if g.time %} · {{ g.time }}{% endif %}{% if g.field %} · {{ g.field }}{% endif %}{% if done %}<span class="donetag">Final {{ g.score_home }}–{{ g.score_away }}</span>{% endif %}</div>
     <form class="sgform" method="post" action="{{ url_for('admin_scores_save') }}">
       <input type="hidden" name="row" value="{{ g.row }}">
+      <input type="hidden" name="division" value="{{ division }}">
       <span class="sgteam">{{ g.home }}
         <input type="number" name="score_home" min="0" value="{{ g.score_home }}" placeholder="0" required></span>
       <span class="sgvs">vs</span>

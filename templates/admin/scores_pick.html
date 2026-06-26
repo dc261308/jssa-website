@@ -1,0 +1,48 @@
+{% extends "page_base.html" %}
+{% block eyebrow %}Admin{% endblock %}
+{% block sub %}<p class="sub">Pick a division to enter scores. You'll see that division's games with the one most recently played at the top, ready to score.</p>{% endblock %}
+{% block body %}
+<style>
+  html{font-size:112.5%}
+  .adminbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}
+  .adminbar a{font-weight:600}
+  .saved{background:#e8f6ee;border:1px solid #bfe3cd;color:#1a7f4b;border-radius:12px;padding:14px 18px;margin-bottom:18px;font-weight:600}
+  .failed{background:var(--red-tint);border:1px solid #f0c9cb;color:#b3151b;border-radius:12px;padding:14px 18px;margin-bottom:18px;font-weight:600}
+  .divpick{display:grid;gap:16px;margin-top:8px}
+  .divbtn{display:flex;align-items:center;gap:18px;text-decoration:none;background:#fff;
+    border:1px solid var(--line);border-left:10px solid var(--line);border-radius:14px;
+    padding:22px 24px;min-height:72px;transition:transform .12s,box-shadow .12s}
+  .divbtn:hover{transform:translateY(-2px);box-shadow:0 10px 28px rgba(22,35,63,.14)}
+  .divbtn.RED{border-left-color:var(--red)}
+  .divbtn.WHITE{border-left-color:var(--navy)}
+  .divbtn.BLUE{border-left-color:var(--blue)}
+  .divname{font-family:var(--display);font-weight:800;font-size:1.7rem;color:var(--navy);letter-spacing:.02em}
+  .divcount{margin-left:auto;text-align:right;color:var(--muted);font-size:1rem;font-weight:600}
+  .divcount .num{display:block;font-family:var(--display);font-weight:800;font-size:1.5rem;color:var(--red)}
+  .divcount .num.zero{color:#1a7f4b}
+  .divarrow{font-size:1.6rem;color:var(--blue);font-weight:800}
+</style>
+
+<div class="adminbar">
+  <a href="{{ url_for('admin_dashboard') }}">← Back to dashboard</a>
+  <a href="{{ url_for('admin_logout') }}">Sign out</a>
+</div>
+
+{% if saved == '1' %}<div class="saved">✓ Score saved. The standings will update within a couple of minutes.</div>{% endif %}
+{% if saved == '0' %}<div class="failed">Couldn't save that score. Make sure both score boxes have a number, then try again.</div>{% endif %}
+
+<div class="divpick">
+  {% for d in ['RED', 'WHITE', 'BLUE'] %}
+  <a class="divbtn {{ d }}" href="{{ url_for('admin_scores', division=d) }}">
+    <span class="divname">{{ d }} Division</span>
+    <span class="divcount">
+      <span class="num {{ 'zero' if counts[d].unscored == 0 else '' }}">{{ counts[d].unscored }}</span>
+      {% if counts[d].unscored == 1 %}game to score{% else %}games to score{% endif %}
+    </span>
+    <span class="divarrow">→</span>
+  </a>
+  {% endfor %}
+</div>
+{% endblock %}
+{% block footer_btns %}<a class="btn btn-navy" href="{{ url_for('admin_dashboard') }}">← Back to dashboard</a>{% endblock %}
+{% block extra_btns %}{% endblock %}

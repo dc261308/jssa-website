@@ -2402,6 +2402,24 @@ def schedule_games_for_scoring():
                 "score_home": g("score home"), "score_away": g("score away"),
                 "status": g("status"),
             })
+        # Order for the admin score form: games that have been played but still
+        # need a score come first (most recently played at the very top, so the
+        # game you just finished is right there), then upcoming games (soonest
+        # first), then games that already have a score (most recent first, for
+        # easy editing).
+        today = datetime.datetime.now(_EASTERN).date()
+
+        def _score_sort_key(gm):
+            done = gm["score_home"] != "" and gm["score_away"] != ""
+            d = _parse_schedule_date(gm["date"], today)
+            ordd = d.toordinal() if d else 0
+            if done:
+                return (2, -ordd)
+            if d and d > today:        # upcoming, not playable yet: soonest first
+                return (1, ordd)
+            return (0, -ordd)          # played (or undated): most recent first
+
+        out.sort(key=_score_sort_key)
         return out
     except Exception:
         return []
