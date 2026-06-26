@@ -1,0 +1,42 @@
+{% extends "page_base.html" %}
+{% block eyebrow %}Prediction Contest{% endblock %}
+{% block sub %}<p class="sub">Each month we crown the league's most accurate predictor. Here's the roll of honor.</p>{% endblock %}
+{% block body %}
+<style>
+  html{font-size:112.5%}
+  .champ-list{display:flex;flex-direction:column;gap:14px;margin-top:8px}
+  .champ-row{display:flex;align-items:center;gap:18px;background:#fff;border:1px solid var(--line);
+    border-left:6px solid var(--blue);border-radius:14px;padding:18px 22px;box-shadow:var(--shadow)}
+  .champ-row.latest{border-left-color:#e3a900;background:linear-gradient(135deg,#fffaf0,#fff)}
+  .champ-medal{font-size:2rem;flex:none;line-height:1}
+  .champ-info{min-width:0;flex:1}
+  .champ-month{font-family:var(--display);font-weight:800;text-transform:uppercase;letter-spacing:.06em;
+    font-size:.8rem;color:var(--muted)}
+  .champ-name{font-family:var(--display);font-weight:900;color:var(--navy);font-size:1.5rem;line-height:1.1;margin:2px 0}
+  .champ-note{color:var(--text);font-size:1rem;line-height:1.4;margin-top:4px}
+  .champ-badge{flex:none;font-family:var(--display);font-weight:800;font-size:.72rem;letter-spacing:.05em;
+    text-transform:uppercase;color:#8a6400;background:#ffe9a3;border:1px solid #e9c969;padding:5px 11px;border-radius:999px}
+  .champ-empty{background:#fff;border:1px solid var(--line);border-radius:14px;padding:28px;text-align:center;color:var(--muted)}
+  @media(max-width:560px){.champ-row{flex-wrap:wrap;gap:12px}.champ-badge{order:3}}
+</style>
+
+{% if champions %}
+<div class="champ-list">
+  {% for c in champions %}
+  <div class="champ-row {{ 'latest' if loop.first else '' }}">
+    <div class="champ-medal">{{ '🏆' if loop.first else '🎖️' }}</div>
+    <div class="champ-info">
+      {% if c.month %}<div class="champ-month">{{ c.month }}</div>{% endif %}
+      <div class="champ-name">{{ c.name }}</div>
+      {% if c.note %}<div class="champ-note">{{ c.note }}</div>{% endif %}
+    </div>
+    {% if loop.first %}<span class="champ-badge">Current champion</span>{% endif %}
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="champ-empty">The first champion will be crowned soon — check back after this month's contest wraps up!</div>
+{% endif %}
+{% endblock %}
+{% block footer_btns %}<a class="btn btn-navy" href="/">← Back to Home</a>{% endblock %}
+{% block extra_btns %}<a class="btn" style="background:var(--blue);color:#fff" href="/#predict">Enter the Prediction Contest →</a>{% endblock %}

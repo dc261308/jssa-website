@@ -2825,15 +2825,15 @@ def prediction_analytics():
 
 
 # ----------------------------------------------------------------------------
-# Prediction Champion of the Month — admin-entered, shown on the homepage.
+# Prediction Champion of the Month — admin-entered history of monthly winners.
 # ----------------------------------------------------------------------------
-# Tom types the monthly winner into the admin panel; it is stored as a single
-# row in a "Prediction Champion" tab and shown as a gold banner in the contest
-# section until the next champion is crowned. A short celebratory note is also
-# shown on the Blackboard for a few days after crowning (see app.py).
+# Tom crowns a winner each month from the admin panel; each one is APPENDED as a
+# new row in a "Prediction Champion" tab. The homepage shows the latest as a
+# button, and the public "Champion of the Month" page lists every month's winner.
+# A short celebratory note also shows on the Blackboard for a few days after the
+# newest champion is crowned (see app.py).
 CHAMPION_TAB = "Prediction Champion"
-CHAMP_HEADERS = ["month", "name", "stats", "note",
-                 "prize", "prize_month", "prize_donor", "announce", "crowned"]
+CHAMP_HEADERS = ["id", "month", "name", "note", "announce", "crowned"]
 _champ_cache = {"data": None, "ts": 0.0}
 
 # How many days the short celebratory announcement stays up after a new champion
@@ -2853,7 +2853,7 @@ def _champion_worksheet():
     try:
         ws = sh.worksheet(CHAMPION_TAB)
     except gspread.WorksheetNotFound:
-        ws = sh.add_worksheet(title=CHAMPION_TAB, rows=10, cols=len(CHAMP_HEADERS))
+        ws = sh.add_worksheet(title=CHAMPION_TAB, rows=50, cols=len(CHAMP_HEADERS))
         ws.update([CHAMP_HEADERS], "A1")
     return ws
 
@@ -2863,87 +2863,111 @@ def _champ_invalidate():
         _champ_cache["ts"] = 0.0
 
 
-def prediction_champion():
-    """The current Champion of the Month, or None if none is set.
-        {month, name, stats, note, prize, announce(bool), crowned, is_fresh(bool)}
-    'is_fresh' is True for the first few days after crowning, so the homepage can
-    also show a short celebratory note. Cached; last good value kept on error."""
+def _read_champion_rows():
+    """Champion rows from the tab, OLDEST first, tolerant of older header
+    layouts. Each: {id, month, name, note, announce(bool), crowned}. Rows with no
+    stored id get a stable id derived from their content so they can be deleted."""
+    ws = _champion_worksheet()
+    vals = ws.get_all_values()
+    if not vals:
+        return []
+    header = [str(c).strip().lower() for c in vals[0]]
+    idx = {h: i for i, h in enumerate(header)}
+
+    def g(row, key):
+        i = idx.get(key)
+        return str(row[i]).strip() if (i is not None and i < len(row)) else ""
+
+    out = []
+    for row in vals[1:]:
+        name = g(row, "name")
+        if not name:
+            continue
+        month = g(row, "month")
+        crowned = g(row, "crowned")
+        note = g(row, "note") or g(row, "stats")  # fold any legacy 'stats' in
+        cid = g(row, "id") or _slug("%s-%s-%s" % (month, name, crowned)) or _slug(name)
+        out.append({
+            "id": cid, "month": month, "name": name, "note": note,
+            "announce": _is_true(g(row, "announce")) if "announce" in idx else True,
+            "crowned": crowned,
+        })
+    return out
+
+
+def _write_champion_rows(champs):
+    """Rewrite the whole tab from a list of champion dicts (oldest first)."""
+    ws = _champion_worksheet()
+    data = [CHAMP_HEADERS]
+    for c in champs:
+        data.append([
+            c.get("id", ""), c.get("month", ""), c.get("name", ""),
+            c.get("note", ""), "TRUE" if c.get("announce", True) else "FALSE",
+            c.get("crowned", ""),
+        ])
+    ws.clear()
+    ws.update(data, "A1")
+    _champ_invalidate()
+
+
+def prediction_champions():
+    """Every monthly champion, NEWEST first. Each carries 'is_fresh' (True for a
+    few days after crowning). Cached; last good value kept on error."""
     now = time.time()
     with _lock:
         if _champ_cache["data"] is not None and now - _champ_cache["ts"] < _CACHE_TTL:
             return _champ_cache["data"]
-
-    champ = None
+    champs = []
     try:
         if is_configured():
-            ws = _champion_worksheet()
-            rows = ws.get_all_records(expected_headers=CHAMP_HEADERS)
-            for r in rows:
-                name = str(r.get("name") or "").strip()
-                if not name:
-                    continue
-                crowned = str(r.get("crowned") or "").strip()
-                is_fresh = False
-                d = _parse_game_date(crowned, datetime.date.today())
-                if d is not None:
-                    is_fresh = (datetime.date.today() - d).days < CHAMPION_ANNOUNCE_DAYS
-                champ = {
-                    "month": str(r.get("month") or "").strip(),
-                    "name": name,
-                    "stats": str(r.get("stats") or "").strip(),
-                    "note": str(r.get("note") or "").strip(),
-                    "prize": str(r.get("prize") or "").strip(),
-                    "prize_month": str(r.get("prize_month") or "").strip(),
-                    "prize_donor": str(r.get("prize_donor") or "").strip(),
-                    "announce": _is_true(r.get("announce")),
-                    "crowned": crowned,
-                    "is_fresh": is_fresh,
-                }
-                break  # only the first (single) champion row is used
+            rows = _read_champion_rows()
+            today = datetime.date.today()
+            for c in rows:
+                d = _parse_game_date(c["crowned"], today)
+                c["is_fresh"] = bool(d and (today - d).days < CHAMPION_ANNOUNCE_DAYS)
+            champs = list(reversed(rows))   # newest (last appended) first
         with _lock:
-            _champ_cache["data"] = champ
+            _champ_cache["data"] = champs
             _champ_cache["ts"] = now
-        return champ
+        return champs
     except Exception:
-        return _champ_cache["data"]
+        return _champ_cache["data"] or []
 
 
-def set_prediction_champion(fields):
-    """Save (overwrite) the single Champion of the Month row. Stamps today's date
-    as 'crowned' so the short celebratory note knows when to stop showing.
-    Returns True on success."""
+def prediction_champion():
+    """The most recent champion (for the homepage button), or None."""
+    champs = prediction_champions()
+    return champs[0] if champs else None
+
+
+def add_prediction_champion(fields):
+    """Append a new monthly champion. Stamps today as 'crowned'. Returns True on
+    success."""
     try:
-        if not is_configured():
+        if not is_configured() or not (fields.get("name") or "").strip():
             return False
-        ws = _champion_worksheet()
-        announce = "TRUE" if _is_true(fields.get("announce")) else "FALSE"
-        row = [
-            (fields.get("month") or "").strip(),
-            (fields.get("name") or "").strip(),
-            (fields.get("stats") or "").strip(),
-            (fields.get("note") or "").strip(),
-            (fields.get("prize") or "").strip(),
-            (fields.get("prize_month") or "").strip(),
-            (fields.get("prize_donor") or "").strip(),
-            announce,
-            datetime.date.today().strftime("%m/%d/%Y"),
-        ]
-        # Always rewrite the header + the single data row (row 2).
-        ws.update([CHAMP_HEADERS, row], "A1")
-        _champ_invalidate()
+        champs = _read_champion_rows()
+        champs.append({
+            "id": uuid.uuid4().hex[:8],
+            "month": (fields.get("month") or "").strip(),
+            "name": (fields.get("name") or "").strip(),
+            "note": (fields.get("note") or "").strip(),
+            "announce": _is_true(fields.get("announce")),
+            "crowned": datetime.date.today().strftime("%m/%d/%Y"),
+        })
+        _write_champion_rows(champs)
         return True
     except Exception:
         return False
 
 
-def clear_prediction_champion():
-    """Remove the current champion (clears the data row). Returns True on success."""
+def delete_prediction_champion(cid):
+    """Remove one champion (by id) from the history. Returns True on success."""
     try:
         if not is_configured():
             return False
-        ws = _champion_worksheet()
-        ws.update([CHAMP_HEADERS, [""] * len(CHAMP_HEADERS)], "A1")
-        _champ_invalidate()
+        champs = [c for c in _read_champion_rows() if c["id"] != cid]
+        _write_champion_rows(champs)
         return True
     except Exception:
         return False

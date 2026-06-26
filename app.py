@@ -367,6 +367,17 @@ def players():
                            card_slugs=card_slugs)
 
 
+@app.route("/champions")
+def champions():
+    """Public Champion of the Month page — every month's top predictor."""
+    try:
+        champs = sheets.prediction_champions()
+    except Exception:
+        champs = []
+    return render_template("pages/champions.html",
+                           page_title="Champion of the Month", champions=champs)
+
+
 # Organized-league sections (fall/winter season, ~mid-Oct through March).
 # Each will read its data from the league Google Sheet once that's set up; until
 # then they show a friendly "season runs October-March" placeholder so the page
@@ -625,33 +636,33 @@ def admin_predictions_save():
 @login_required
 def admin_champion():
     configured = sheets.is_configured()
-    champion = None
+    champions = []
     if configured:
         try:
-            champion = sheets.prediction_champion()
+            champions = sheets.prediction_champions()
         except Exception:
-            champion = None
+            champions = []
     return render_template("admin/champion.html", configured=configured,
-                           champion=champion, saved=request.args.get("saved"))
+                           champions=champions, saved=request.args.get("saved"))
 
 
-@app.route("/admin/champion/save", methods=["POST"])
+@app.route("/admin/champion/add", methods=["POST"])
 @login_required
-def admin_champion_save():
+def admin_champion_add():
     ok = False
     if request.form.get("name", "").strip():
         try:
-            ok = sheets.set_prediction_champion(request.form)
+            ok = sheets.add_prediction_champion(request.form)
         except Exception:
             ok = False
     return redirect(url_for("admin_champion", saved=("1" if ok else "0")))
 
 
-@app.route("/admin/champion/clear", methods=["POST"])
+@app.route("/admin/champion/<cid>/delete", methods=["POST"])
 @login_required
-def admin_champion_clear():
+def admin_champion_delete(cid):
     try:
-        sheets.clear_prediction_champion()
+        sheets.delete_prediction_champion(cid)
     except Exception:
         pass
     return redirect(url_for("admin_champion"))

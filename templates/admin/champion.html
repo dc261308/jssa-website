@@ -1,6 +1,6 @@
 {% extends "page_base.html" %}
 {% block eyebrow %}Admin{% endblock %}
-{% block sub %}<p class="sub">Crown the monthly prediction champion. It shows as a gold banner in the contest area on the homepage until you crown the next one.</p>{% endblock %}
+{% block sub %}<p class="sub">Crown each month's prediction champion. The newest one shows as a button on the homepage, and every winner is listed on the Champion of the Month page.</p>{% endblock %}
 {% block body %}
 <style>
   html{font-size:112.5%}
@@ -29,6 +29,15 @@
   .preview .pstats{color:#5d4b1e;font-weight:600}
   .preview .pprize{margin-top:10px;color:#6b531a}
   .clearform{margin-top:14px}
+  .chist{list-style:none;margin:10px 0 0;padding:0}
+  .chist li{display:flex;align-items:center;gap:14px;padding:14px 16px;border:1px solid var(--line);
+    border-radius:12px;margin-bottom:10px;background:#fff}
+  .chist li.cur{border-left:6px solid #e3a900;background:#fffaf0}
+  .chist .ci{flex:1;min-width:0}
+  .chist .cm{font-family:var(--display);font-weight:700;color:var(--muted);font-size:.8rem;text-transform:uppercase;letter-spacing:.05em}
+  .chist .cn{font-family:var(--display);font-weight:800;color:var(--navy);font-size:1.15rem}
+  .chist .cnote{color:var(--text);font-size:.95rem;margin-top:2px}
+  .chist .mini.del{color:#b3151b;border:1px solid #f0c9cb;background:#fff;border-radius:8px;padding:7px 13px;font-weight:600;cursor:pointer}
 </style>
 
 <div class="adminbar">
@@ -36,52 +45,59 @@
   <a href="{{ url_for('admin_logout') }}">Sign out</a>
 </div>
 
-{% if saved == '1' %}<div class="saved">✓ Champion saved. It's live on the homepage now.</div>{% endif %}
+{% if saved == '1' %}<div class="saved">✓ Champion added. The button is live on the homepage and they're on the Champion of the Month page now.</div>{% endif %}
 {% if saved == '0' %}<div class="failed">Couldn't save that. Make sure the champion's name is filled in, then try again.</div>{% endif %}
 
 {% if not configured %}
   <div class="note"><strong>The content sheet isn't connected yet.</strong> Once it's set up, you'll be able to crown a champion here.</div>
 {% else %}
 
-  {% if champion and champion.name %}
-  <h2 class="form-h">🏆 Current champion</h2>
-  <p class="form-sub">This is showing on the homepage right now. Edit the fields below and save to update it, or remove it entirely.</p>
-  <div class="preview" style="background:linear-gradient(135deg,#2b5bd0,#1f47ad);border-color:#1f47ad">
-    <div class="pname" style="color:#fff">Congratulations to our {{ champion.month or 'Champion' }}, {{ champion.name }}!</div>
-    {% if champion.note %}<div class="pprize" style="margin-top:8px;color:#eaf1ff">{{ champion.note }}</div>{% endif %}
-  </div>
-  <form class="clearform" method="post" action="{{ url_for('admin_champion_clear') }}" onsubmit="return confirm('Remove the champion banner from the homepage?');">
-    <button class="btn" type="submit" style="background:#f4f5f8;color:var(--navy)">Remove the banner</button>
-  </form>
-  {% endif %}
-
-  <h2 class="form-h" style="margin-top:34px">{{ 'Update the champion' if (champion and champion.name) else 'Crown this month\'s champion' }}</h2>
-  <p class="form-sub">Fill these in and hit save — the banner updates on the homepage right away.</p>
-  <form class="adm" method="post" action="{{ url_for('admin_champion_save') }}">
-    <div class="row">
-      <label for="month">Champion title</label>
-      <input type="text" id="month" name="month" value="{{ champion.month if champion else '' }}" placeholder="e.g. June 2026 champion">
-      <div class="hint">The headline reads: &ldquo;Congratulations to our <em>[title]</em>, <em>[name]</em>!&rdquo; — so put something like &ldquo;June 2026 champion&rdquo; here.</div>
+  <h2 class="form-h">🏆 Crown this month's champion</h2>
+  <p class="form-sub">Add the latest winner. They become the button on the homepage and the top of the <a href="{{ url_for('champions') }}" target="_blank">Champion of the Month</a> page.</p>
+  <form class="adm" method="post" action="{{ url_for('admin_champion_add') }}">
+    <div class="two">
+      <div class="row">
+        <label for="month">Which month?</label>
+        <input type="text" id="month" name="month" placeholder="e.g. June 2026">
+        <div class="hint">Shows as &ldquo;<em>June 2026</em> Champion: <em>name</em>&rdquo; on the button.</div>
+      </div>
+      <div class="row">
+        <label for="name">Champion's name</label>
+        <input type="text" id="name" name="name" placeholder="e.g. John Cariero" required>
+      </div>
     </div>
     <div class="row">
-      <label for="name">Champion's name</label>
-      <input type="text" id="name" name="name" value="{{ champion.name if champion else '' }}" placeholder="e.g. John Cariero" required>
+      <label for="note">Details <span style="font-weight:400;color:var(--muted)">(optional)</span></label>
+      <textarea id="note" name="note" placeholder="e.g. Picked 7 of 10 correct (70% accuracy). Well done! Receives a $25 gift certificate, compliments of Don Spieler."></textarea>
+      <div class="hint">A line in your own words — accuracy, congratulations, any prize &amp; who donated it. Shown on the Champion of the Month page.</div>
     </div>
-    <div class="row">
-      <label for="note">Line 2 — the message <span style="font-weight:400;color:var(--muted)">(optional)</span></label>
-      <textarea id="note" name="note" placeholder="e.g. John picked 7 of 10 correct (70% accuracy). Well done! John receives a $25 gift certificate, compliments of Don Spieler.">{{ champion.note if champion else '' }}</textarea>
-      <div class="hint">One line in your own words — the accuracy, congratulations, and any prize &amp; who donated it. Keep it to a sentence or two.</div>
-    </div>
-
     <div class="row" style="margin-top:6px">
       <div class="checkrow">
-        <input type="checkbox" id="announce" name="announce" value="1" {{ 'checked' if (not champion or champion.announce) else '' }}>
+        <input type="checkbox" id="announce" name="announce" value="1" checked>
         <label for="announce">Also show a short celebratory note on the homepage Blackboard for a few days</label>
       </div>
     </div>
-
-    <button class="btn btn-navy" type="submit">Save champion</button>
+    <button class="btn btn-navy" type="submit">Add champion</button>
   </form>
+
+  {% if champions %}
+  <div class="section-h">Champions so far</div>
+  <p class="hint" style="margin-top:0;margin-bottom:10px">Newest first. The top one is the current champion shown on the homepage button.</p>
+  <ul class="chist">
+    {% for c in champions %}
+    <li class="{{ 'cur' if loop.first else '' }}">
+      <div class="ci">
+        {% if c.month %}<div class="cm">{{ c.month }}{% if loop.first %} · current{% endif %}</div>{% endif %}
+        <div class="cn">{{ c.name }}</div>
+        {% if c.note %}<div class="cnote">{{ c.note }}</div>{% endif %}
+      </div>
+      <form method="post" action="{{ url_for('admin_champion_delete', cid=c.id) }}" onsubmit="return confirm('Remove {{ c.name }} from the champions list?');">
+        <button class="mini del" type="submit">Remove</button>
+      </form>
+    </li>
+    {% endfor %}
+  </ul>
+  {% endif %}
 {% endif %}
 {% endblock %}
 {% block footer_btns %}<a class="btn btn-navy" href="{{ url_for('admin_dashboard') }}">← Back to dashboard</a>{% endblock %}

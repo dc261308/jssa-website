@@ -158,14 +158,12 @@
   .predict{background:var(--navy);color:#fff}
   .predict .sec-eyebrow{color:#9fc0ff}
   .predict .sec-title{color:#fff}.predict .sec-sub{color:#cbd6ee}
-  /* Champion of the Month — royal-blue banner shown above the highlights
-     section. Two lines: headline + a free-text message Tom writes. */
-  .cotm{background:linear-gradient(135deg,#2b5bd0,#1f47ad);
-    border:1px solid rgba(255,255,255,.20);border-radius:14px;padding:18px 26px;margin-bottom:26px;
-    box-shadow:0 10px 28px rgba(22,35,63,.20)}
-  .cotm-title{font-family:var(--display);font-weight:900;color:#fff;font-size:1.6rem;line-height:1.14}
-  .cotm-msg{margin-top:6px;color:#eaf1ff;font-size:1.04rem;font-weight:500;line-height:1.4}
-  @media(max-width:560px){.cotm-title{font-size:1.34rem}}
+  /* Champion of the Month — a gold button in the contest button row that links
+     to the Champion of the Month page. Fills the rest of the row. */
+  .cotm-btn{flex:1 1 260px;display:inline-flex;align-items:center;justify-content:center;gap:8px;
+    background:linear-gradient(135deg,#ffe27a,#f0b822);color:#16233f !important;
+    border:1px solid #ffe9a3;font-family:var(--display);font-weight:800;text-align:center;line-height:1.2}
+  .cotm-btn:hover{filter:brightness(1.04);transform:translateY(-1px)}
   /* Live odds panel */
   .odds{margin-top:30px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);border-radius:16px;padding:22px 22px 18px}
   .odds-head{font-family:var(--display);font-weight:800;color:#fff;font-size:1.18rem;margin:0 0 4px;display:flex;align-items:center;gap:9px}
@@ -509,6 +507,9 @@
     <div class="cta-row" style="margin-top:28px;gap:16px;flex-wrap:wrap">
       <a class="btn btn-red" href="https://script.google.com/macros/s/AKfycbwqXbN6B6WNa7Dye3NJcUWzmNrMETCZWjW2F8JrjmhKb7F3idebOxiBeRm1Fpzpx1ij/exec?view=predictions_test" target="_blank" rel="noopener">🏆 Enter the Prediction Game →</a>
       <a class="btn" style="background:#2b5bd0;color:#fff" href="https://script.google.com/macros/s/AKfycbwqXbN6B6WNa7Dye3NJcUWzmNrMETCZWjW2F8JrjmhKb7F3idebOxiBeRm1Fpzpx1ij/exec?view=prediction_leaderboard" target="_blank" rel="noopener">📊 View the Leaderboard →</a>
+      {% if champion and champion.name %}
+      <a class="btn cotm-btn" href="/champions">🏆 {{ champion.month }}{% if champion.month %} {% endif %}Champion: {{ champion.name }}</a>
+      {% endif %}
     </div>
 
     {% if pred_odds %}
@@ -540,12 +541,6 @@
 
     {% if pred_stats %}
     <div class="insights">
-      {% if champion and champion.name %}
-      <div class="cotm">
-        <div class="cotm-title">Congratulations to our {{ champion.month or 'Champion' }}, {{ champion.name }}!</div>
-        {% if champion.note %}<div class="cotm-msg">{{ champion.note }}</div>{% endif %}
-      </div>
-      {% endif %}
       <div class="insights-head">📈 Season insights</div>
       <div class="igrid">
         {% if pred_stats.get('total games scored') %}
