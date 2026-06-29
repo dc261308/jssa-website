@@ -3054,6 +3054,145 @@ def _sponsor_invalidate():
         _sponsor_cache["ts"] = 0.0
 
 
+# ----------------------------------------------------------------------------
+# Pickup Game Player Survey — live results
+# ----------------------------------------------------------------------------
+# Reads the Google Form's linked "responses" spreadsheet and tallies the two
+# choices for the public results page (/survey-results).
+#
+# The form is anonymous, so this sheet has NO names or emails in it — only a
+# timestamp and each person's selected option. The responses-sheet ID is built
+# in below (just like TEAMS_SHEET_ID / ROSTER_SHEET_ID / CONTROL_SHEET_ID — an
+# ID is not a secret; access is granted by *sharing* the sheet with the service
+# account, Viewer is enough). Override with SURVEY_SHEET_ID in Render if it ever
+# moves. If the sheet isn't reachable yet, survey_is_configured() stays usable
+# and the page shows a friendly "results coming soon" message instead of error.
+SURVEY_SHEET_ID = os.environ.get(
+    "SURVEY_SHEET_ID", "1vM_WC5C_iSjjitGlqlqjcduHnxay1zmQAAhFzaVk1lA"
+).strip()
+SURVEY_TAB = os.environ.get("SURVEY_TAB", "Form Responses 1").strip()
+
+# Friendly labels shown on the bars. These are display text only — the tally
+# itself classifies each answer by meaning (see _survey_bucket), so Tom can
+# reword the form's options without the totals ever drifting.
+SURVEY_OPTIONS = [
+    {"key": "fewer", "label": "Fewer players per team (8–9)",
+     "blurb": "More games on more fields"},
+    {"key": "more", "label": "More players per team (12–13)",
+     "blurb": "Fewer games on fewer fields"},
+]
+
+_survey_cache = {"data": None, "ts": 0.0}
+_SURVEY_TTL = 60  # seconds — short so the page feels live as votes come in
+
+_SURVEY_SMALL_RE = re.compile(r"8\s*(?:or|to|-|,)?\s*9")
+_SURVEY_BIG_RE = re.compile(r"12\s*(?:or|to|-|,)?\s*13")
+
+
+def survey_is_configured():
+    return bool(SURVEY_SHEET_ID and _SA_JSON)
+
+
+def _survey_bucket(text):
+    """Classify one response as 'fewer', 'more' or 'other'.
+
+    Robust to wording changes: it first looks for the plain phrases
+    'fewer players' / 'more players', and otherwise falls back to whichever team
+    size (8-9 vs 12-13) the sentence mentions first — which is always the option
+    the person picked. So the option text can be edited in the form without the
+    totals breaking."""
+    t = str(text or "").lower().replace("–", "-").replace("—", "-")
+    has_more = "more players" in t
+    has_fewer = "fewer players" in t
+    if has_fewer and not has_more:
+        return "fewer"
+    if has_more and not has_fewer:
+        return "more"
+    small = _SURVEY_SMALL_RE.search(t)
+    big = _SURVEY_BIG_RE.search(t)
+    if small and big:
+        return "fewer" if small.start() <= big.start() else "more"
+    if small:
+        return "fewer"
+    if big:
+        return "more"
+    return "other"
+
+
+def _survey_worksheet():
+    import gspread
+    from google.oauth2.service_account import Credentials
+    info = json.loads(_SA_JSON)
+    scopes = ["https://www.googleapis.com/auth/spreadsheets.readonly"]
+    creds = Credentials.from_service_account_info(info, scopes=scopes)
+    gc = gspread.authorize(creds)
+    sh = gc.open_by_key(SURVEY_SHEET_ID)
+    try:
+        return sh.worksheet(SURVEY_TAB)
+    except Exception:
+        return sh.get_worksheet(0)  # fall back to the first tab if renamed
+
+
+def _empty_survey(configured):
+    return {"configured": configured, "total": 0, "other": 0,
+            "last_response": None, "tie": False,
+            "options": [dict(o, count=0, pct=0) for o in SURVEY_OPTIONS]}
+
+
+def survey_results():
+    """Live tally of the Pickup Game Player Survey, shaped for the results page.
+
+    Degrades gracefully: if the sheet isn't configured or a refresh fails, the
+    last good numbers are reused (or an 'empty' result is returned) so the page
+    never shows an error to the public."""
+    now = time.time()
+    with _lock:
+        if _survey_cache["data"] is not None and now - _survey_cache["ts"] < _SURVEY_TTL:
+            return _survey_cache["data"]
+
+    if not survey_is_configured():
+        return _empty_survey(False)
+
+    try:
+        rows = _survey_worksheet().get_all_values()
+        counts = {"fewer": 0, "more": 0}
+        other = 0
+        last_response = None
+        # Skip the header row; classify every response. The answer sits in
+        # column B, but we join columns B+ so any extra columns can't trip us up.
+        for row in rows[1:]:
+            answer = " ".join(c for c in row[1:] if c).strip()
+            if not answer:
+                continue
+            bucket = _survey_bucket(answer)
+            if bucket == "other":
+                other += 1
+            else:
+                counts[bucket] += 1
+            if row and row[0].strip():
+                last_response = row[0].strip()  # column A = Google's timestamp
+        total = counts["fewer"] + counts["more"]
+        data = {
+            "configured": True,
+            "total": total,
+            "other": other,
+            "last_response": last_response,
+            "tie": total > 0 and counts["fewer"] == counts["more"],
+            "options": [
+                dict(o, count=counts.get(o["key"], 0),
+                     pct=(round(100 * counts.get(o["key"], 0) / total) if total else 0))
+                for o in SURVEY_OPTIONS
+            ],
+        }
+        with _lock:
+            _survey_cache["data"] = data
+            _survey_cache["ts"] = now
+        return data
+    except Exception:
+        # Keep showing the last good numbers if a refresh ever fails.
+        return _survey_cache["data"] or _empty_survey(True)
+
+
 def sponsors():
     """Active sponsors, ordered. Shaped for the homepage script (n,t,u,l,p).
     [] if not set up -> homepage falls back to its built-in list."""

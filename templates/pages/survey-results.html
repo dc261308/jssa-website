@@ -1,0 +1,82 @@
+{% extends "page_base.html" %}
+{% block eyebrow %}Member Survey{% endblock %}
+{% block sub %}<p class="sub">How should we split up the daily pickup games? Here's how the league is voting — this page updates by itself as responses come in.</p>{% endblock %}
+{% block body %}
+<style>
+  html{font-size:112.5%}  /* larger, easier-to-read text */
+  .sv-total{display:flex;align-items:baseline;gap:12px;margin:4px 0 26px}
+  .sv-total .n{font-family:var(--display);font-weight:900;font-size:3.2rem;color:var(--navy);line-height:1}
+  .sv-total .l{font-family:var(--display);font-weight:700;text-transform:uppercase;letter-spacing:.06em;font-size:.95rem;color:var(--muted)}
+  .sv-bars{display:flex;flex-direction:column;gap:22px}
+  .sv-card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:22px 24px;box-shadow:var(--shadow)}
+  .sv-card.lead{border-color:#bcd0f5;background:linear-gradient(135deg,#f3f7ff,#fff)}
+  .sv-top{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;margin-bottom:14px}
+  .sv-label{font-family:var(--display);font-weight:800;color:var(--navy);font-size:1.5rem;line-height:1.18}
+  .sv-blurb{color:var(--muted);font-size:1.02rem;margin-top:4px}
+  .sv-pct{font-family:var(--display);font-weight:900;font-size:2.6rem;color:var(--blue);line-height:1;flex:none}
+  .sv-card.lead .sv-pct{color:var(--red)}
+  .sv-track{height:28px;background:var(--blue-tint);border-radius:999px;overflow:hidden}
+  .sv-fill{height:100%;border-radius:999px;background:var(--blue);min-width:3px;transition:width .6s ease}
+  .sv-card.lead .sv-fill{background:var(--red)}
+  .sv-count{margin-top:11px;font-size:1.1rem;color:var(--text);font-weight:600}
+  .sv-badge{display:inline-block;font-family:var(--display);font-weight:800;font-size:.68rem;letter-spacing:.05em;
+    text-transform:uppercase;color:#fff;background:var(--red);padding:4px 10px;border-radius:999px;margin-left:10px;vertical-align:middle}
+  .sv-tie{background:var(--blue-tint);border:1px solid #cfe0fa;color:var(--blue);border-radius:12px;
+    padding:14px 18px;margin-bottom:20px;font-family:var(--display);font-weight:700;font-size:1.1rem;text-align:center}
+  .sv-foot{margin-top:26px;color:var(--muted);font-size:.98rem;line-height:1.6}
+  .sv-empty{background:#fff;border:1px solid var(--line);border-radius:14px;padding:34px 28px;text-align:center;color:var(--muted);font-size:1.15rem}
+  @media(max-width:560px){.sv-top{flex-wrap:wrap}.sv-pct{font-size:2.1rem}.sv-total .n{font-size:2.6rem}}
+</style>
+
+{% if not survey.configured or survey.total == 0 %}
+  <div class="sv-empty">
+    {% if not survey.configured %}
+      Voting results will appear here as soon as the survey opens. Check back soon!
+    {% else %}
+      No responses have come in yet — results will appear here automatically once members start voting.
+    {% endif %}
+  </div>
+{% else %}
+  {% set lead = (survey.options | sort(attribute='count', reverse=true) | first) %}
+
+  <div class="sv-total">
+    <span class="n">{{ survey.total }}</span>
+    <span class="l">total responses</span>
+  </div>
+
+  {% if survey.tie %}
+    <div class="sv-tie">🤝 It's a dead heat right now — the league is split evenly.</div>
+  {% endif %}
+
+  <div class="sv-bars">
+    {% for o in survey.options %}
+    {% set is_lead = (not survey.tie and o.count == lead.count and o.count > 0) %}
+    <div class="sv-card {{ 'lead' if is_lead else '' }}">
+      <div class="sv-top">
+        <div>
+          <div class="sv-label">{{ o.label }}{% if is_lead %}<span class="sv-badge">Leading</span>{% endif %}</div>
+          <div class="sv-blurb">{{ o.blurb }}</div>
+        </div>
+        <div class="sv-pct">{{ o.pct }}%</div>
+      </div>
+      <div class="sv-track"><div class="sv-fill" style="width:{{ o.pct }}%"></div></div>
+      <div class="sv-count">{{ o.count }} {{ 'vote' if o.count == 1 else 'votes' }}</div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <p class="sv-foot">
+    This page refreshes by itself about once a minute as members vote.
+    {% if survey.last_response %}<br>Most recent response: {{ survey.last_response }}.{% endif %}
+    {% if survey.other %}<br>({{ survey.other }} response{{ 's' if survey.other != 1 else '' }}
+      didn't match either option and {{ 'are' if survey.other != 1 else 'is' }} not counted above.){% endif %}
+  </p>
+
+  <script>
+    /* Reload once a minute so the bars stay current without anyone refreshing. */
+    setTimeout(function () { location.reload(); }, 60000);
+  </script>
+{% endif %}
+{% endblock %}
+{% block footer_btns %}<a class="btn btn-navy" href="/">← Back to Home</a>{% endblock %}
+{% block extra_btns %}{% endblock %}

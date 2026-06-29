@@ -97,6 +97,7 @@
     <a class="mtile" href="{{ url_for('admin_predictions') }}"><span class="ic">&#127919;</span> Report prediction winners</a>
     <a class="mtile" href="{{ url_for('admin_champion') }}"><span class="ic">&#127942;</span> Champion of the Month</a>
     <a class="mtile" href="{{ url_for('admin_communications') }}"><span class="ic">&#9993;</span> Email members</a>
+    <a class="mtile" href="{{ url_for('survey_results') }}" target="_blank" rel="noopener"><span class="ic">&#128202;</span> Pickup survey results</a>
     <a class="mtile" href="https://docs.google.com/spreadsheets/d/1Z8ukg8IJE3xTEPZzIpI7-itTdLMiPrkLLHR8GoT-Qb8/edit?gid=1612175999#gid=1612175999" target="_blank" rel="noopener"><span class="ic">&#128203;</span> Membership database</a>
     <div class="mtile" style="cursor:default;flex-direction:column;gap:2px">
       <span style="font-size:1.4rem;font-weight:700;color:var(--navy);line-height:1.1">&#128064; {{ "{:,}".format(views or 0) }}</span>

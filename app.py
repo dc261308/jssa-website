@@ -378,6 +378,20 @@ def champions():
                            page_title="Champion of the Month", champions=champs)
 
 
+@app.route("/survey-results")
+def survey_results():
+    """Public live results for the Pickup Game Player Survey — a big, simple
+    bar chart of the two options. Reads the form's responses sheet via the
+    service account; shows a friendly placeholder until that's configured."""
+    try:
+        survey = sheets.survey_results()
+    except Exception:
+        survey = {"configured": False, "total": 0, "other": 0,
+                  "last_response": None, "tie": False, "options": []}
+    return render_template("pages/survey-results.html",
+                           page_title="Pickup Game Survey — Results", survey=survey)
+
+
 # Organized-league sections (fall/winter season, ~mid-Oct through March).
 # Each will read its data from the league Google Sheet once that's set up; until
 # then they show a friendly "season runs October-March" placeholder so the page
