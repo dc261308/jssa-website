@@ -678,6 +678,16 @@ def admin_directory():
     return render_template("admin/directory.html", directory=directory)
 
 
+@app.route("/admin/membership")
+@login_required
+def admin_membership():
+    try:
+        matrix = sheets.membership_matrix()
+    except Exception:
+        matrix = {"headers": [], "rows": [], "count": 0}
+    return render_template("admin/membership.html", matrix=matrix)
+
+
 @app.route("/admin/communications")
 @login_required
 def admin_communications():
