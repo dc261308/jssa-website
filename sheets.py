@@ -3061,11 +3061,15 @@ def _sponsor_invalidate():
 # choices for the public results page (/survey-results).
 #
 # The form is anonymous, so this sheet has NO names or emails in it — only a
-# timestamp and each person's selected option. To switch the page on: share the
-# responses spreadsheet with the service account (Viewer access is enough) and
-# set SURVEY_SHEET_ID in Render. Until then survey_is_configured() is False and
-# the page shows a friendly "results coming soon" message instead of an error.
-SURVEY_SHEET_ID = os.environ.get("SURVEY_SHEET_ID", "").strip()
+# timestamp and each person's selected option. The responses-sheet ID is built
+# in below (just like TEAMS_SHEET_ID / ROSTER_SHEET_ID / CONTROL_SHEET_ID — an
+# ID is not a secret; access is granted by *sharing* the sheet with the service
+# account, Viewer is enough). Override with SURVEY_SHEET_ID in Render if it ever
+# moves. If the sheet isn't reachable yet, survey_is_configured() stays usable
+# and the page shows a friendly "results coming soon" message instead of error.
+SURVEY_SHEET_ID = os.environ.get(
+    "SURVEY_SHEET_ID", "1vM_WC5C_iSjjitGlqlqjcduHnxay1zmQAAhFzaVk1lA"
+).strip()
 SURVEY_TAB = os.environ.get("SURVEY_TAB", "Form Responses 1").strip()
 
 # Friendly labels shown on the bars. These are display text only — the tally
