@@ -1808,7 +1808,8 @@ def player_directory():
 # The only manual step is sharing that spreadsheet with the service account
 # (Viewer is enough); its address is service_account_email().
 MATRIX_SHEET_ID = os.environ.get(
-    "MATRIX_SHEET_ID", "").strip()  # <-- paste the registration sheet id here
+    "MATRIX_SHEET_ID",
+    "1Z8ukg8IJE3xTEPZzIpI7-itTdLMiPrkLLHR8GoT-Qb8").strip()
 MATRIX_TAB = os.environ.get("MATRIX_TAB", "Membership Matrix").strip()
 
 _matrix_cache = {"data": None, "ts": 0.0}
