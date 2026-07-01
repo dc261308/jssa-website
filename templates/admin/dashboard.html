@@ -32,6 +32,7 @@
   .form-h{font-size:1.5rem;margin:6px 0 4px}
   .form-sub{color:var(--muted);margin:0 0 18px;font-size:1.02rem}
   .manage-head{font-family:var(--display);font-weight:700;color:var(--navy);font-size:1.05rem;margin:34px 0 12px;padding-top:22px;border-top:1px solid var(--line)}
+  .manage-sub{font-family:var(--display);font-weight:700;color:var(--blue);font-size:.82rem;letter-spacing:.05em;text-transform:uppercase;margin:22px 0 9px}
   .manage-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
   @media(max-width:680px){.manage-grid{grid-template-columns:repeat(2,1fr)}}
   @media(max-width:420px){.manage-grid{grid-template-columns:1fr}}
@@ -87,18 +88,56 @@
   </form>
 
   <div class="manage-head">Manage site content</div>
+
+  <div class="manage-sub">Announcements &amp; Blackboard</div>
   <div class="manage-grid">
     <a class="mtile" href="{{ url_for('admin_blackboard') }}"><span class="ic">&#128203;</span> Blackboard posts</a>
+  </div>
+
+  <div class="manage-sub">People &amp; Recognition</div>
+  <div class="manage-grid">
     <a class="mtile" href="{{ url_for('admin_memoriam') }}"><span class="ic">&#128367;</span> In Memoriam</a>
     <a class="mtile" href="{{ url_for('admin_hof') }}"><span class="ic">&#127942;</span> Hall of Fame</a>
     <a class="mtile" href="{{ url_for('admin_board') }}"><span class="ic">&#128101;</span> Board of Directors</a>
     <a class="mtile" href="{{ url_for('admin_sponsors') }}"><span class="ic">&#129309;</span> Sponsors</a>
-    <a class="mtile" href="{{ url_for('admin_scores') }}"><span class="ic">&#9918;</span> Enter game scores</a>
-    <a class="mtile" href="{{ url_for('admin_predictions') }}"><span class="ic">&#127919;</span> Report prediction winners</a>
+  </div>
+
+  <div class="manage-sub">League Games</div>
+  <div class="manage-grid">
+    <a class="mtile" href="{{ url_for('admin_scores') }}"><span class="ic">&#9918;</span> Enter League Game Scores</a>
+  </div>
+
+  <div class="manage-sub">Prediction Contest Management</div>
+  <div class="manage-grid">
+    <a class="mtile" href="{{ url_for('admin_predictions') }}"><span class="ic">&#127919;</span> Report Prediction Winners</a>
     <a class="mtile" href="{{ url_for('admin_champion') }}"><span class="ic">&#127942;</span> Champion of the Month</a>
-    <a class="mtile" href="{{ url_for('admin_communications') }}"><span class="ic">&#9993;</span> Email members</a>
-    <a class="mtile" href="{{ url_for('survey_results') }}" target="_blank" rel="noopener"><span class="ic">&#128202;</span> Pickup survey results</a>
-    <a class="mtile" href="https://docs.google.com/spreadsheets/d/1Z8ukg8IJE3xTEPZzIpI7-itTdLMiPrkLLHR8GoT-Qb8/edit?gid=1612175999#gid=1612175999" target="_blank" rel="noopener"><span class="ic">&#128203;</span> Membership database</a>
+  </div>
+
+  <div class="manage-sub">Communications</div>
+  <div class="manage-grid">
+    <a class="mtile" href="{{ url_for('admin_communications') }}"><span class="ic">&#9993;</span> Email Members</a>
+  </div>
+
+  <div class="manage-sub">Registrations &amp; Membership</div>
+  <div class="manage-grid">
+    <a class="mtile" href="https://docs.google.com/spreadsheets/d/1Z8ukg8IJE3xTEPZzIpI7-itTdLMiPrkLLHR8GoT-Qb8/edit?gid=785407878#gid=785407878" target="_blank" rel="noopener"><span class="ic">&#128221;</span> Completed Registration Submissions</a>
+    <a class="mtile" href="https://docs.google.com/spreadsheets/d/1Z8ukg8IJE3xTEPZzIpI7-itTdLMiPrkLLHR8GoT-Qb8/edit?gid=1612175999#gid=1612175999" target="_blank" rel="noopener"><span class="ic">&#128203;</span> Membership Database</a>
+  </div>
+
+  {# Self-service section: buttons the board adds from the "Board Portal Links"
+     tab of the control sheet. New rows appear here automatically. #}
+  {% for group in portal_links %}
+    <div class="manage-sub">{{ group.section }}</div>
+    <div class="manage-grid">
+      {% for link in group.links %}
+      <a class="mtile" href="{{ link.url }}" target="_blank" rel="noopener"><span class="ic">&#128279;</span> {{ link.name }}</a>
+      {% endfor %}
+    </div>
+  {% endfor %}
+  <p class="hint" style="margin-top:10px">Add your own buttons anytime: open the <strong>&ldquo;Board Portal Links&rdquo;</strong> tab in the control sheet and add a row &mdash; Section, Button name, Link, and <strong>Yes</strong>. It shows up here automatically. Change <strong>Yes</strong> to <strong>No</strong> to hide one.</p>
+
+  <div class="manage-sub" style="margin-top:26px">Site stats</div>
+  <div class="manage-grid">
     <div class="mtile" style="cursor:default;flex-direction:column;gap:2px">
       <span style="font-size:1.4rem;font-weight:700;color:var(--navy);line-height:1.1">&#128064; {{ "{:,}".format(views or 0) }}</span>
       <span style="font-size:.82rem;color:var(--muted);font-weight:600">Homepage visits</span>

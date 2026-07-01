@@ -1856,6 +1856,86 @@ def _control_sheet(readonly=True):
     return gc.open_by_key(CONTROL_SHEET_ID)
 
 
+# ----------------------------------------------------------------------------
+# Board Portal Links — a self-service menu the board manages from a sheet tab.
+# Any row the board adds to the "Board Portal Links" tab of the control sheet
+# ("JSSA website control sheet_live") shows up as a button in the admin portal.
+# No code changes are needed to add, hide, or reorder links.
+#   Columns:  Section | Button name | Link | Show?
+# The tab is created (headers + one hidden example row) the first time this runs
+# if it doesn't already exist. Everything fails safe to [] so the dashboard
+# always loads even if the sheet/API is unavailable.
+# ----------------------------------------------------------------------------
+PORTAL_LINKS_TAB = "Board Portal Links"
+PORTAL_LINKS_HEADERS = ["Section", "Button name", "Link", "Show?"]
+PORTAL_LINKS_SEED = [
+    ["Board Links", "Example link — rename or delete this row",
+     "https://example.com", "No"],
+]
+
+_portal_links_cache = {"data": None, "ts": 0.0}
+_PORTAL_LINKS_TTL = 60  # seconds
+
+
+def _parse_portal_links(rows):
+    """Turn the tab's raw rows into ordered sections, keeping only rows whose
+    'Show?' is yes-ish and that have both a button name and a link:
+        [{"section": "Board Links", "links": [{"name":.., "url":..}, ..]}, ..]"""
+    if not rows or len(rows) < 2:
+        return []
+    order, by_section = [], {}
+    for r in rows[1:]:  # skip header row
+        section = ((r[0].strip() if len(r) > 0 else "") or "Board Links")
+        name = r[1].strip() if len(r) > 1 else ""
+        url = r[2].strip() if len(r) > 2 else ""
+        show = (r[3].strip().lower() if len(r) > 3 else "yes")
+        if not name or not url:
+            continue
+        if show in ("no", "false", "0", "off", "hidden", "hide"):
+            continue
+        if section not in by_section:
+            by_section[section] = []
+            order.append(section)
+        by_section[section].append({"name": name, "url": url})
+    return [{"section": s, "links": by_section[s]} for s in order]
+
+
+def get_portal_links():
+    """Board-managed portal links from the control sheet's "Board Portal Links"
+    tab. Creates the tab (pre-filled) the first time if it's missing. Cached
+    briefly; fails safe to []."""
+    now = time.time()
+    with _lock:
+        c = _portal_links_cache
+        if c["data"] is not None and now - c["ts"] < _PORTAL_LINKS_TTL:
+            return c["data"]
+
+    sections = []
+    try:
+        if CONTROL_SHEET_ID and _SA_JSON:
+            import gspread
+            try:
+                ws = _control_sheet(readonly=True).worksheet(PORTAL_LINKS_TAB)
+                rows = ws.get_all_values()
+            except gspread.WorksheetNotFound:
+                # First run: create the tab, pre-filled, so the board sees the
+                # format. Needs write scope (the service account can edit this
+                # sheet — it already writes game scores here).
+                sh = _control_sheet(readonly=False)
+                ws = sh.add_worksheet(title=PORTAL_LINKS_TAB, rows=200,
+                                      cols=len(PORTAL_LINKS_HEADERS))
+                ws.update([PORTAL_LINKS_HEADERS] + PORTAL_LINKS_SEED, "A1")
+                rows = [PORTAL_LINKS_HEADERS] + PORTAL_LINKS_SEED
+            sections = _parse_portal_links(rows)
+    except Exception:
+        sections = []
+
+    with _lock:
+        _portal_links_cache["data"] = sections
+        _portal_links_cache["ts"] = now
+    return sections
+
+
 def _control_tabs(sh):
     """Read EVERY tab's values in a single batch API call, returning
     [(title, all_values), ...]. One request instead of one-per-tab keeps us

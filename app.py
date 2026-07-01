@@ -544,18 +544,23 @@ def admin_dashboard():
     configured = sheets.is_configured()
     notices = []
     error = None
+    portal_links = []
     if configured:
         try:
             notices = sheets.list_notices()
         except Exception as e:
             error = str(e)
+        try:
+            portal_links = sheets.get_portal_links()
+        except Exception:
+            portal_links = []
     try:
         views = sheets.home_view_count()
     except Exception:
         views = None
     return render_template("admin/dashboard.html",
                            configured=configured, notices=notices,
-                           error=error, views=views)
+                           error=error, views=views, portal_links=portal_links)
 
 
 @app.route("/admin/scores")
