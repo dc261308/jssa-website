@@ -171,3 +171,13 @@ function sendMailerTest() {
   queueEmail_(me, 'JSSA Mailer test', 'If you received this, the Outbox is working.');
   SpreadsheetApp.getActiveSpreadsheet().toast('Test email queued to ' + me + '.');
 }
+
+/**
+ * Public "send now" button. processOutbox_ is private (trailing underscore) so
+ * it doesn't appear in the Run dropdown; this wrapper does. Run it once while
+ * logged in as jssagames to grant the send-email permission and flush the queue
+ * immediately, instead of waiting for the every-5-minute trigger.
+ */
+function runOutboxNow() {
+  processOutbox_();
+}
