@@ -51,6 +51,20 @@ with the headers and one hidden example row:
 Fill in one row per account, paste each account's URL into **Reporter URL**, and
 set **Show?** to **Yes**. That's it — the counter picks it up within a minute.
 
+## Watch an account privately (not on the website)
+To monitor an account for your own eyes only — never shown on the site — deploy
+the reporter in that account exactly as above, but **do not** add it to the
+"Email Accounts" tab. Instead, in a Google Sheet that only you can see, put:
+
+```
+=IMPORTDATA("https://.../exec?key=YOUR_SECRET&format=csv")
+```
+
+That fills a small two-column table (emails sent today, people reached, sends
+left, etc.). The site never knows about it because it isn't on the "Email
+Accounts" tab. Note: `IMPORTDATA` refreshes about once an hour on its own; for
+an instant read, open the same URL (without `&format=csv`) in a browser.
+
 ## Notes
 - The page labels each account automatically from what its script reports; the
   **Account** column is just a friendly label for you in the sheet.

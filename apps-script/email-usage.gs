@@ -47,14 +47,23 @@ function authorizeNow() {
 
 function doGet(e) {
   var provided = (e && e.parameter && e.parameter.key) || '';
+  // Add &format=csv to the URL to get a clean two-column table that a private
+  // Google Sheet can pull in with =IMPORTDATA(). Default is JSON (used by the
+  // website).
+  var format = (e && e.parameter && e.parameter.format || '').toLowerCase();
   if (provided !== SECRET) {
-    return _json({ ok: false, error: 'unauthorized' });
+    return _out({ ok: false, error: 'unauthorized' }, format);
   }
   try {
-    return _json(_usage());
+    return _out(_usage(), format);
   } catch (err) {
-    return _json({ ok: false, error: String(err) });
+    return _out({ ok: false, error: String(err) }, format);
   }
+}
+
+
+function _out(obj, format) {
+  return (format === 'csv') ? _csv(obj) : _json(obj);
 }
 
 
@@ -116,4 +125,33 @@ function _json(obj) {
   return ContentService
     .createTextOutput(JSON.stringify(obj))
     .setMimeType(ContentService.MimeType.JSON);
+}
+
+
+// A tidy two-column table for =IMPORTDATA() in a private sheet.
+function _csv(u) {
+  var rows;
+  if (!u || u.ok === false) {
+    rows = [['Metric', 'Value'], ['Error', (u && u.error) || 'unknown']];
+  } else {
+    rows = [
+      ['Metric', 'Value'],
+      ['Account', u.account],
+      ['Emails sent today', u.messages_today],
+      ['People reached', u.recipients_today],
+      ['Sends left today', u.remaining_today],
+      ['Daily limit', u.daily_limit],
+      ['Updated', u.updated]
+    ];
+  }
+  var out = rows.map(function (r) {
+    return r.map(_csvCell).join(',');
+  }).join('\n');
+  return ContentService.createTextOutput(out).setMimeType(ContentService.MimeType.CSV);
+}
+
+
+function _csvCell(v) {
+  v = String(v == null ? '' : v);
+  return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v;
 }
