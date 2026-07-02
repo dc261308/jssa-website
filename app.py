@@ -26,8 +26,10 @@ import os
 import hmac
 import functools
 import re
+import json
 import threading
 import urllib.request
+from concurrent.futures import ThreadPoolExecutor
 
 from flask import (
     Flask, render_template, jsonify, abort,
@@ -39,6 +41,12 @@ import sheets
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "dev-only-insecure-key")
 ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "")
+
+# Email Send Counter: comma-separated list of deployed Apps Script /exec URLs,
+# one per league Gmail account being watched. Set in Render as EMAIL_USAGE_URLS.
+# See apps-script/README.md. Empty = feature simply shows a setup notice.
+EMAIL_USAGE_URLS = [u.strip() for u in
+                    os.environ.get("EMAIL_USAGE_URLS", "").split(",") if u.strip()]
 
 
 @app.after_request
@@ -695,6 +703,38 @@ def admin_directory():
     except Exception:
         directory = {"headers": [], "players": []}
     return render_template("admin/directory.html", directory=directory)
+
+
+@app.route("/admin/email-usage")
+@login_required
+def admin_email_usage():
+    return render_template("admin/email-usage.html",
+                           configured=bool(EMAIL_USAGE_URLS),
+                           account_count=len(EMAIL_USAGE_URLS))
+
+
+def _fetch_email_usage(url):
+    """Fetch one account's Apps Script reporter. Always returns a dict so one
+    unreachable account never breaks the page."""
+    try:
+        with urllib.request.urlopen(url, timeout=15) as r:
+            data = json.loads(r.read().decode("utf-8"))
+        if isinstance(data, dict):
+            return data
+        return {"ok": False, "error": "unexpected response"}
+    except Exception as e:
+        return {"ok": False, "error": str(e)}
+
+
+@app.route("/admin/email-usage.json")
+@login_required
+def admin_email_usage_json():
+    if not EMAIL_USAGE_URLS:
+        return jsonify({"ok": True, "configured": False, "accounts": []})
+    # A handful of accounts — fetch them at once so the page stays snappy.
+    with ThreadPoolExecutor(max_workers=max(1, len(EMAIL_USAGE_URLS))) as ex:
+        accounts = list(ex.map(_fetch_email_usage, EMAIL_USAGE_URLS))
+    return jsonify({"ok": True, "configured": True, "accounts": accounts})
 
 
 @app.route("/admin/notices/add", methods=["POST"])

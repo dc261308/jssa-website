@@ -1,0 +1,124 @@
+{% extends "page_base.html" %}
+{% block doctitle %}Email Send Counter{% endblock %}
+{% block eyebrow %}Admin{% endblock %}
+{% block sub %}<p class="sub">See how many emails each league account has sent today, and how many sends are left before Gmail's daily limit. Updates live.</p>{% endblock %}
+{% block body %}
+<style>
+  html{font-size:112.5%}
+  .adminbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+  .adminbar a{font-weight:600}
+  .refresh-row{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin:0 0 20px}
+  .rbtn{display:inline-flex;align-items:center;gap:9px;font-family:var(--display);font-weight:700;
+    font-size:1rem;padding:12px 18px;border-radius:11px;cursor:pointer;border:2px solid var(--line);background:#fff;color:var(--navy)}
+  .rbtn:hover{border-color:var(--blue)}
+  .rmeta{color:var(--muted);font-size:.95rem}
+  .usage-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px}
+  .ucard{background:var(--surface);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);
+    padding:22px 22px 20px;border-top:6px solid var(--blue)}
+  .ucard.ok-lots{border-top-color:#1a7f4b}
+  .ucard.ok-some{border-top-color:#c9821a}
+  .ucard.ok-low{border-top-color:var(--red)}
+  .ucard.err{border-top-color:var(--muted)}
+  .uacct{font-family:var(--display);font-weight:800;color:var(--navy);font-size:1.12rem;word-break:break-all;margin:0 0 14px}
+  .ubig{font-family:var(--display);font-weight:900;color:var(--navy);font-size:3.2rem;line-height:1;margin:0}
+  .ubig .of{font-size:1.2rem;font-weight:700;color:var(--muted)}
+  .ulabel{font-family:var(--display);font-weight:700;letter-spacing:.04em;text-transform:uppercase;
+    font-size:.82rem;color:var(--muted);margin:4px 0 0}
+  .ubar{height:12px;border-radius:999px;background:#eef1f7;overflow:hidden;margin:16px 0 14px}
+  .ubar span{display:block;height:100%;background:var(--blue);border-radius:999px;transition:width .4s}
+  .ok-lots .ubar span{background:#1a7f4b}
+  .ok-some .ubar span{background:#c9821a}
+  .ok-low  .ubar span{background:var(--red)}
+  .urow{display:flex;justify-content:space-between;align-items:baseline;padding:7px 0;border-top:1px solid var(--line);font-size:1.02rem}
+  .urow .n{font-family:var(--display);font-weight:800;color:var(--navy);font-size:1.25rem}
+  .uupd{color:var(--muted);font-size:.86rem;margin:12px 0 0}
+  .uerr{color:#b3151b;font-weight:600;font-size:.98rem;margin:8px 0 0}
+  .note{background:#fff8e6;border:1px solid #f3e2b3;color:#7a5b12;border-radius:12px;padding:18px 20px}
+  .note code{background:#fff;border:1px solid #eadfbf;border-radius:5px;padding:1px 6px;font-size:.92em}
+  .uskel{color:var(--muted)}
+</style>
+
+<div class="adminbar">
+  <a href="{{ url_for('admin_dashboard') }}">← Back to dashboard</a>
+  <a href="{{ url_for('admin_logout') }}">Sign out</a>
+</div>
+
+{% if not configured %}
+  <div class="note">
+    <p style="margin-bottom:8px"><strong>Almost there — the counter isn't connected yet.</strong></p>
+    <p>Follow the one-time setup in <code>apps-script/README.md</code>: deploy the small
+    reporter script inside each league Gmail account, then add the
+    <code>EMAIL_USAGE_URLS</code> setting in Render. Once that's in place, this page
+    fills in automatically — no further code changes needed.</p>
+  </div>
+{% else %}
+  <div class="refresh-row">
+    <button class="rbtn" id="refreshBtn" type="button">↻ Refresh now</button>
+    <span class="rmeta" id="refreshMeta">Loading…</span>
+  </div>
+
+  <div class="usage-grid" id="usageGrid">
+    <p class="uskel">Checking each account…</p>
+  </div>
+
+  <p class="rmeta" style="margin-top:18px">A group email in BCC counts as <strong>one</strong> message but reaches
+  many people — the “sends left” number counts people, since that's what Gmail limits (about 100 a day).</p>
+
+  <script>
+  (function(){
+    var grid = document.getElementById('usageGrid');
+    var meta = document.getElementById('refreshMeta');
+    var btn  = document.getElementById('refreshBtn');
+    var JSON_URL = {{ url_for('admin_email_usage_json') | tojson }};
+
+    function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+
+    function cardFor(a){
+      if(!a || a.ok===false){
+        return '<div class="ucard err"><p class="uacct">'+esc((a&&a.account)||'An account')+'</p>'+
+          '<p class="uerr">Couldn\'t reach this account\'s reporter right now.</p>'+
+          '<p class="uupd">'+esc((a&&a.error)||'')+'</p></div>';
+      }
+      var limit = a.daily_limit || 100;
+      var left  = (a.remaining_today==null) ? '' : a.remaining_today;
+      var used  = a.recipients_today || 0;
+      var pct   = Math.max(0, Math.min(100, Math.round(used/limit*100)));
+      var cls   = 'ok-lots';
+      if(left !== '' && left <= 10) cls = 'ok-low';
+      else if(left !== '' && left <= 30) cls = 'ok-some';
+      return '<div class="ucard '+cls+'">'+
+        '<p class="uacct">'+esc(a.account||'—')+'</p>'+
+        '<p class="ubig">'+esc(left)+' <span class="of">of '+esc(limit)+'</span></p>'+
+        '<p class="ulabel">Sends left today</p>'+
+        '<div class="ubar"><span style="width:'+pct+'%"></span></div>'+
+        '<div class="urow"><span>Emails sent today</span><span class="n">'+esc(a.messages_today||0)+'</span></div>'+
+        '<div class="urow"><span>People reached</span><span class="n">'+esc(used)+'</span></div>'+
+        (a.updated ? '<p class="uupd">Account time: '+esc(a.updated)+'</p>' : '')+
+      '</div>';
+    }
+
+    function load(){
+      meta.textContent = 'Checking…';
+      fetch(JSON_URL, {headers:{'Accept':'application/json'}})
+        .then(function(r){return r.json();})
+        .then(function(d){
+          var accts = (d && d.accounts) || [];
+          if(!accts.length){ grid.innerHTML = '<p class="uskel">No accounts reported back.</p>'; }
+          else { grid.innerHTML = accts.map(cardFor).join(''); }
+          meta.textContent = 'Updated just now · refreshes automatically';
+        })
+        .catch(function(){
+          meta.textContent = 'Couldn\'t refresh — check your connection and try again.';
+        });
+    }
+
+    btn.addEventListener('click', load);
+    load();
+    setInterval(load, 60000); // auto-refresh every minute
+  })();
+  </script>
+{% endif %}
+{% endblock %}
+{% block footer_btns %}<a class="btn btn-navy" href="{{ url_for('admin_dashboard') }}">← Back to dashboard</a>{% endblock %}
+{% block extra_btns %}{% endblock %}
