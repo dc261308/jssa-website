@@ -19,11 +19,15 @@ For **each** of the three accounts, signed in as that account:
 1. Open <https://script.google.com> → **New project**.
 2. Delete the sample code, paste all of [`email-usage.gs`](./email-usage.gs), Save.
 3. Set `SECRET` to a long random phrase — **the same phrase in all three**.
-4. **Deploy → New deployment → Web app**:
+4. **Run the `authorizeNow` function once** to grant Gmail access: pick it in
+   the editor's function dropdown, click **Run**, choose the account, and on the
+   "unverified app" screen click **Advanced → Go to … → Allow**. (Skipping this
+   makes the web app return a "does not have permission" error.)
+5. **Deploy → New deployment → Web app**:
    - **Execute as:** Me
    - **Who has access:** Anyone
-5. Deploy, approve the permissions, and copy the **Web app URL** (ends in `/exec`).
-6. Add `?key=YOUR_SECRET` to the end of that URL.
+6. Deploy and copy the **Web app URL** (ends in `/exec`).
+7. Add `?key=YOUR_SECRET` to the end of that URL.
 
 You'll end up with three URLs like:
 ```
