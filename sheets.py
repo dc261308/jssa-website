@@ -1894,6 +1894,78 @@ def get_portal_links():
     return sections
 
 
+# ----------------------------------------------------------------------------
+# Email Accounts — the league Gmail accounts the "Email Send Counter" watches.
+# Managed entirely from a sheet tab (no Render/env access needed), the same way
+# Board Portal Links work. Each row is one account's Apps Script reporter URL.
+#   Columns:  Account | Reporter URL | Show?
+# The tab is created (headers + one hidden example row) the first time this runs
+# if it doesn't already exist. Fails safe to [] so the page always loads.
+# ----------------------------------------------------------------------------
+EMAIL_ACCOUNTS_TAB = "Email Accounts"
+EMAIL_ACCOUNTS_HEADERS = ["Account", "Reporter URL", "Show?"]
+EMAIL_ACCOUNTS_SEED = [
+    ["example@gmail.com",
+     "https://script.google.com/macros/s/EXAMPLE/exec?key=YOUR_SECRET", "No"],
+]
+
+_email_accounts_cache = {"data": None, "ts": 0.0}
+_EMAIL_ACCOUNTS_TTL = 60  # seconds
+
+
+def _parse_email_accounts(rows):
+    """Keep rows that have a reporter URL and whose 'Show?' is yes-ish:
+        [{"label": "jssagames@gmail.com", "url": "https://.../exec?key=.."}, ..]"""
+    if not rows or len(rows) < 2:
+        return []
+    out = []
+    for r in rows[1:]:  # skip header row
+        label = r[0].strip() if len(r) > 0 else ""
+        url = r[1].strip() if len(r) > 1 else ""
+        show = (r[2].strip().lower() if len(r) > 2 else "yes")
+        if not url:
+            continue
+        if show in ("no", "false", "0", "off", "hidden", "hide"):
+            continue
+        out.append({"label": label, "url": url})
+    return out
+
+
+def get_email_usage_urls():
+    """League Gmail reporter URLs from the control sheet's "Email Accounts" tab.
+    Creates the tab (pre-filled) the first time if it's missing. Cached briefly;
+    fails safe to []."""
+    now = time.time()
+    with _lock:
+        c = _email_accounts_cache
+        if c["data"] is not None and now - c["ts"] < _EMAIL_ACCOUNTS_TTL:
+            return c["data"]
+
+    accounts = []
+    try:
+        if CONTROL_SHEET_ID and _SA_JSON:
+            import gspread
+            try:
+                ws = _control_sheet(readonly=True).worksheet(EMAIL_ACCOUNTS_TAB)
+                rows = ws.get_all_values()
+            except gspread.WorksheetNotFound:
+                # First run: create the tab, pre-filled, so the board sees the
+                # format. The service account can edit this sheet already.
+                sh = _control_sheet(readonly=False)
+                ws = sh.add_worksheet(title=EMAIL_ACCOUNTS_TAB, rows=50,
+                                      cols=len(EMAIL_ACCOUNTS_HEADERS))
+                ws.update([EMAIL_ACCOUNTS_HEADERS] + EMAIL_ACCOUNTS_SEED, "A1")
+                rows = [EMAIL_ACCOUNTS_HEADERS] + EMAIL_ACCOUNTS_SEED
+            accounts = _parse_email_accounts(rows)
+    except Exception:
+        accounts = []
+
+    with _lock:
+        _email_accounts_cache["data"] = accounts
+        _email_accounts_cache["ts"] = now
+    return accounts
+
+
 def _control_tabs(sh):
     """Read EVERY tab's values in a single batch API call, returning
     [(title, all_values), ...]. One request instead of one-per-tab keeps us

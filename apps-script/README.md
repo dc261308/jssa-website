@@ -32,21 +32,26 @@ https://script.google.com/macros/s/BBBB.../exec?key=YOUR_SECRET
 https://script.google.com/macros/s/CCCC.../exec?key=YOUR_SECRET
 ```
 
-### 2. Tell the website about them (Render)
-In Render → the `jssa-website` service → **Environment**, add one variable:
+### 2. Tell the website about them (Google Sheet — no Render needed)
+Open the **control sheet** ("JSSA website control sheet_live", the same one with
+the *Board Portal Links* tab) and find the **"Email Accounts"** tab. The website
+creates it automatically the first time the counter page is opened, pre-filled
+with the headers and one hidden example row:
 
-- **Key:** `EMAIL_USAGE_URLS`
-- **Value:** the three URLs above, separated by commas (no spaces):
-  ```
-  https://.../exec?key=YOUR_SECRET,https://.../exec?key=YOUR_SECRET,https://.../exec?key=YOUR_SECRET
-  ```
+| Account | Reporter URL | Show? |
+|---|---|---|
+| jssagames@gmail.com | `https://.../exec?key=YOUR_SECRET` | Yes |
+| jssaadmin@gmail.com | `https://.../exec?key=YOUR_SECRET` | Yes |
+| cosentinoteam@gmail.com | `https://.../exec?key=YOUR_SECRET` | Yes |
 
-Save. Render redeploys in about a minute, and the Email Send Counter goes live.
+Fill in one row per account, paste each account's URL into **Reporter URL**, and
+set **Show?** to **Yes**. That's it — the counter picks it up within a minute.
 
 ## Notes
-- The page labels each account automatically from what its script reports — the
-  order of the URLs doesn't matter, and you can add or remove an account later
-  just by editing this one variable (no code change).
+- The page labels each account automatically from what its script reports; the
+  **Account** column is just a friendly label for you in the sheet.
+- Add, hide, or remove an account anytime by editing the tab — set **Show?** to
+  **No** to hide one. No code change, no Render access.
 - A BCC blast to 80 people counts as **1** message but **80** recipients. The
   "sends left today" number uses recipients, since that's what Gmail limits.
 - To change the daily limit, edit `DAILY_LIMIT` at the top of the script in each

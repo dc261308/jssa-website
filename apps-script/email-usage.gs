@@ -22,8 +22,8 @@
  *        Who has access:    Anyone
  *      Click Deploy, approve the permissions, and COPY the Web app URL
  *      (it ends in /exec).
- *   5. Add  ?key=YOUR_SECRET  to the end of that URL. That full URL is what
- *      the website needs (see apps-script/README.md).
+ *   5. Add  ?key=YOUR_SECRET  to the end of that URL. Paste that full URL into
+ *      the "Email Accounts" tab of the control sheet (see apps-script/README.md).
  * ---------------------------------------------------------------------------
  */
 

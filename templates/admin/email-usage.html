@@ -45,11 +45,13 @@
 
 {% if not configured %}
   <div class="note">
-    <p style="margin-bottom:8px"><strong>Almost there — the counter isn't connected yet.</strong></p>
-    <p>Follow the one-time setup in <code>apps-script/README.md</code>: deploy the small
-    reporter script inside each league Gmail account, then add the
-    <code>EMAIL_USAGE_URLS</code> setting in Render. Once that's in place, this page
-    fills in automatically — no further code changes needed.</p>
+    <p style="margin-bottom:8px"><strong>Almost there — no accounts are set up yet.</strong></p>
+    <p>Open the control sheet and find the <strong>&ldquo;Email Accounts&rdquo;</strong> tab
+    (created automatically). For each league Gmail account, paste its reporter link into the
+    <strong>Reporter URL</strong> column and set <strong>Show?</strong> to <strong>Yes</strong>.
+    The links come from the small script in <code>apps-script/email-usage.gs</code> — full
+    steps are in <code>apps-script/README.md</code>. Once a row is filled in, this page fills
+    in automatically.</p>
   </div>
 {% else %}
   <div class="refresh-row">
