@@ -169,9 +169,16 @@ function _csvCell(v) {
 //   3. Pick 'startAutoUpdates' in the function dropdown and click Run once
 //      (approve the extra permissions). It then updates on its own.
 //   Use 'stopAutoUpdates' to turn it back off.
+//
+// To ALSO log OTHER accounts in the same tab (e.g. the league games account)
+// without visiting the website, add their reporter URLs to ALSO_LOG_URLS.
+// Each account gets its own row per day.
 // ---------------------------------------------------------------------------
 var LOG_SHEET_ID = '';          // <-- paste your private sheet's ID here
 var LOG_TAB = 'Email Usage';    // the tab it writes into
+var ALSO_LOG_URLS = [
+  // 'https://script.google.com/macros/s/.../exec?key=YOUR_SECRET',
+];
 
 
 function startAutoUpdates() {
@@ -195,7 +202,6 @@ function updateSheet() {
   if (!LOG_SHEET_ID) {
     throw new Error('Set LOG_SHEET_ID to your private sheet ID first.');
   }
-  var u = _usage();
   var tz = Session.getScriptTimeZone();
   var ss = SpreadsheetApp.openById(LOG_SHEET_ID);
   var sh = ss.getSheetByName(LOG_TAB);
@@ -206,20 +212,49 @@ function updateSheet() {
   }
   var today = Utilities.formatDate(new Date(), tz, 'yyyy-MM-dd');
 
-  // One row per day: update today's row if it exists, otherwise add it.
-  var values = sh.getDataRange().getValues();
-  var rowIndex = -1;
-  for (var i = 1; i < values.length; i++) {
-    var cell = values[i][0];
-    var cellStr = (cell instanceof Date)
-      ? Utilities.formatDate(cell, tz, 'yyyy-MM-dd') : String(cell);
-    if (cellStr === today) { rowIndex = i + 1; break; }
+  // This account (read directly) plus any others pulled in by URL.
+  var usages = [_usage()];
+  for (var k = 0; k < ALSO_LOG_URLS.length; k++) {
+    var extra = _fetchUsage(ALSO_LOG_URLS[k]);
+    if (extra) usages.push(extra);
   }
-  var row = [today, u.account, u.messages_today, u.recipients_today,
-             u.remaining_today, u.updated];
-  if (rowIndex > 0) {
-    sh.getRange(rowIndex, 1, 1, row.length).setValues([row]);
-  } else {
-    sh.appendRow(row);
+
+  var values = sh.getDataRange().getValues();
+  for (var n = 0; n < usages.length; n++) {
+    var u = usages[n];
+    if (!u || u.ok === false) continue;
+    // One row per account per day: match on both Date and Account.
+    var rowIndex = -1;
+    for (var i = 1; i < values.length; i++) {
+      var cell = values[i][0];
+      var cellStr = (cell instanceof Date)
+        ? Utilities.formatDate(cell, tz, 'yyyy-MM-dd') : String(cell);
+      if (cellStr === today &&
+          String(values[i][1]).toLowerCase() === String(u.account).toLowerCase()) {
+        rowIndex = i + 1;
+        break;
+      }
+    }
+    var row = [today, u.account, u.messages_today, u.recipients_today,
+               u.remaining_today, u.updated];
+    if (rowIndex > 0) {
+      sh.getRange(rowIndex, 1, 1, row.length).setValues([row]);
+    } else {
+      sh.appendRow(row);
+      values.push(row);  // so a later account this run can still match/add
+    }
+  }
+}
+
+
+// Fetch another account's numbers from its reporter web app (needs the key on
+// the URL). Returns the usage object, or null if it couldn't be read.
+function _fetchUsage(url) {
+  try {
+    var resp = UrlFetchApp.fetch(url, { muteHttpExceptions: true });
+    var data = JSON.parse(resp.getContentText());
+    return (data && data.ok) ? data : null;
+  } catch (e) {
+    return null;
   }
 }
