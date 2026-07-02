@@ -37,6 +37,14 @@ var SECRET = 'PUT_A_LONG_RANDOM_PHRASE_HERE';
 var DAILY_LIMIT = 100;
 
 
+// Run this ONCE from the editor (pick it in the function dropdown, click Run)
+// to grant the account's Gmail permission. Without this first run, the web app
+// returns a "does not have permission" error. Harmless to leave in place.
+function authorizeNow() {
+  Logger.log(_usage());
+}
+
+
 function doGet(e) {
   var provided = (e && e.parameter && e.parameter.key) || '';
   if (provided !== SECRET) {
