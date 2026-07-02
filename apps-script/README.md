@@ -76,6 +76,11 @@ dated history — use the built-in logger instead of `IMPORTDATA`:
    and updates it every 5 minutes (one row per day). Run **`stopAutoUpdates`**
    to turn it off. Change `everyMinutes(5)` if you want a different cadence.
 
+To also log **other** accounts in the same tab (e.g. see the league games
+account alongside your own, without opening the website), add their reporter
+URLs — the full `…/exec?key=…` links — to the `ALSO_LOG_URLS` list. Each account
+gets its own row per day.
+
 ## Notes
 - The page labels each account automatically from what its script reports; the
   **Account** column is just a friendly label for you in the sheet.
