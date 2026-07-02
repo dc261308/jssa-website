@@ -155,3 +155,71 @@ function _csvCell(v) {
   v = String(v == null ? '' : v);
   return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v;
 }
+
+
+// ---------------------------------------------------------------------------
+// OPTIONAL: auto-updating private log
+// ---------------------------------------------------------------------------
+// Writes today's numbers into a private Google Sheet every few minutes, so you
+// get a live count (and a dated history) without the ~1-hour delay of
+// =IMPORTDATA(). To turn it on:
+//   1. Create/open a Google Sheet only you can see.
+//   2. Copy its ID from the URL — the long code between /d/ and /edit — into
+//      LOG_SHEET_ID below, and Save.
+//   3. Pick 'startAutoUpdates' in the function dropdown and click Run once
+//      (approve the extra permissions). It then updates on its own.
+//   Use 'stopAutoUpdates' to turn it back off.
+// ---------------------------------------------------------------------------
+var LOG_SHEET_ID = '';          // <-- paste your private sheet's ID here
+var LOG_TAB = 'Email Usage';    // the tab it writes into
+
+
+function startAutoUpdates() {
+  stopAutoUpdates();  // avoid piling up duplicate triggers
+  ScriptApp.newTrigger('updateSheet').timeBased().everyMinutes(5).create();
+  updateSheet();      // write once right now
+}
+
+
+function stopAutoUpdates() {
+  var triggers = ScriptApp.getProjectTriggers();
+  for (var i = 0; i < triggers.length; i++) {
+    if (triggers[i].getHandlerFunction() === 'updateSheet') {
+      ScriptApp.deleteTrigger(triggers[i]);
+    }
+  }
+}
+
+
+function updateSheet() {
+  if (!LOG_SHEET_ID) {
+    throw new Error('Set LOG_SHEET_ID to your private sheet ID first.');
+  }
+  var u = _usage();
+  var tz = Session.getScriptTimeZone();
+  var ss = SpreadsheetApp.openById(LOG_SHEET_ID);
+  var sh = ss.getSheetByName(LOG_TAB);
+  if (!sh) {
+    sh = ss.insertSheet(LOG_TAB);
+    sh.appendRow(['Date', 'Account', 'Emails sent', 'People reached',
+                  'Sends left', 'Last updated']);
+  }
+  var today = Utilities.formatDate(new Date(), tz, 'yyyy-MM-dd');
+
+  // One row per day: update today's row if it exists, otherwise add it.
+  var values = sh.getDataRange().getValues();
+  var rowIndex = -1;
+  for (var i = 1; i < values.length; i++) {
+    var cell = values[i][0];
+    var cellStr = (cell instanceof Date)
+      ? Utilities.formatDate(cell, tz, 'yyyy-MM-dd') : String(cell);
+    if (cellStr === today) { rowIndex = i + 1; break; }
+  }
+  var row = [today, u.account, u.messages_today, u.recipients_today,
+             u.remaining_today, u.updated];
+  if (rowIndex > 0) {
+    sh.getRange(rowIndex, 1, 1, row.length).setValues([row]);
+  } else {
+    sh.appendRow(row);
+  }
+}

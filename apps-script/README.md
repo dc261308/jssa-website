@@ -65,6 +65,17 @@ left, etc.). The site never knows about it because it isn't on the "Email
 Accounts" tab. Note: `IMPORTDATA` refreshes about once an hour on its own; for
 an instant read, open the same URL (without `&format=csv`) in a browser.
 
+### Auto-updating private log (no hourly wait)
+For a private view that refreshes on its own every few minutes — and keeps a
+dated history — use the built-in logger instead of `IMPORTDATA`:
+1. Create a Google Sheet only you can see. Copy its ID from the URL (the long
+   code between `/d/` and `/edit`).
+2. In the account's reporter script, set `LOG_SHEET_ID` to that ID and Save.
+3. Pick **`startAutoUpdates`** in the function dropdown → **Run** once, and
+   approve the extra permissions. It writes an **"Email Usage"** tab immediately
+   and updates it every 5 minutes (one row per day). Run **`stopAutoUpdates`**
+   to turn it off. Change `everyMinutes(5)` if you want a different cadence.
+
 ## Notes
 - The page labels each account automatically from what its script reports; the
   **Account** column is just a friendly label for you in the sheet.
